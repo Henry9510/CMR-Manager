@@ -9,7 +9,7 @@ import java.util.Optional;
 @Repository
 public interface EquipoRepository extends JpaRepository<Equipo, Long> {
 
-    Optional<Equipo> findByNumeroParte(String numeroParte);
+    Optional<Equipo> findByCodigo(String codigo);
 
-    boolean existsByNumeroParte(String numeroParte);
+    boolean existsByCodigo(String codigo);
 }

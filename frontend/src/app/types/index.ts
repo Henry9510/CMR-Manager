@@ -5,19 +5,37 @@ export type WorkOrderType = 'Correctivo' | 'Preventivo' | 'Predictivo' | 'Emerge
 export type WorkOrderStatus = 'Creada' | 'Planificada' | 'En Ejecución' | 'Cerrada';
 
 export interface Equipment {
+  tipo_id: any;
   id: string;
   name: string;
   code: string;
-  type: 'Planta' | 'Línea' | 'Máquina' | 'Componente';
+  type: string; // ej: "Bomba", "Compresor", etc (desde tipo_equipo.nombre)
   criticality: CriticalityLevel;
   location: string;
-  parent?: string;
-  children?: Equipment[];
+  status: 'Operativo' | 'Mantenimiento' | 'Fuera de servicio' | 'Reparación';
   manufacturer?: string;
   model?: string;
   serialNumber?: string;
   installDate?: string;
-  status: 'Operativo' | 'Detenido' | 'En Mantenimiento';
+  components?: Component[];
+  // IDs para edición
+  tipoId?: number | null;
+  ubicacionId?: number | null;
+  estadoId?: number | null;
+  criticidadId?: number | null;
+  // Nombre y código para edición
+  nombre?: string;
+  codigo?: string;
+}
+
+export interface Component {
+  id: string;
+  code: string;
+  name: string;
+  description?: string;
+  manufacturer?: string;
+  serialNumber?: string;
+  criticality: CriticalityLevel;
 }
 
 export interface WorkOrder {

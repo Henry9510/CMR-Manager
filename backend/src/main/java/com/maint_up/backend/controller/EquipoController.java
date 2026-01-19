@@ -2,6 +2,7 @@ package com.maint_up.backend.controller;
 
 import com.maint_up.backend.model.Equipo;
 import com.maint_up.backend.service.EquipoService;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -9,7 +10,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/equipos")
-@CrossOrigin(origins = "*") // para frontend
+@CrossOrigin(origins = "http://localhost:5173/") // para frontend
 public class EquipoController {
 
     private final EquipoService equipoService;
@@ -32,8 +33,13 @@ public class EquipoController {
 
     // POST - crear equipo
     @PostMapping
-    public ResponseEntity<Equipo> crear(@RequestBody Equipo equipo) {
-        return ResponseEntity.ok(equipoService.crearEquipo(equipo));
+    public ResponseEntity<?> crear(@RequestBody Equipo equipo) {
+        try {
+            Equipo nuevoEquipo = equipoService.crearEquipo(equipo);
+            return ResponseEntity.status(HttpStatus.CREATED).body(nuevoEquipo);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        }
     }
 
     // PUT - actualizar equipo
