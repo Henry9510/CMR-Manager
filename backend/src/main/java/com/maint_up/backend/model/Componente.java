@@ -10,7 +10,8 @@ import jakarta.persistence.Table;
 import jakarta.persistence.FetchType;
 import lombok.Getter;
 import lombok.Setter;
-import com.fasterxml.jackson.annotation.JsonIgnore;
+
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 
 @Getter
@@ -26,9 +27,9 @@ public class Componente {
     private String numeroParte; // Número de parte del componente
     private String descripcion; // Descripción opcional
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "equipo_id")
-    @JsonIgnore  // No serializa la referencia al Equipo para evitar loops
+    @JsonBackReference
     private Equipo equipo;
 
     @ManyToOne(fetch = FetchType.EAGER)

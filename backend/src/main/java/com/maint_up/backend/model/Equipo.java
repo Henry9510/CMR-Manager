@@ -39,6 +39,7 @@ public class Equipo {
     @JsonManagedReference
     private Criticidad criticidad;
 
-    @OneToMany(mappedBy = "equipo", fetch = FetchType.EAGER)
+    @OneToMany(mappedBy = "equipo", fetch = FetchType.EAGER, cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference
     private List<Componente> componentes; // Piezas que pueden fallar
 }

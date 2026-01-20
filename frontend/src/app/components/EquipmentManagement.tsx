@@ -25,26 +25,33 @@ import {
   CheckCircle,
   Clock,
   Plus,
-  X,
+  Pencil,
+  Trash,
 } from 'lucide-react';
+
 import { Equipment } from '../types';
 
 const API_URL = 'http://localhost:8080/api/equipos';
 
 export function EquipmentManagement() {
+  // Estado principal
   const [equipments, setEquipments] = useState<Equipment[]>([]);
   const [selectedEquipment, setSelectedEquipment] = useState<Equipment | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('Todos');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Modal states
+  // Búsqueda y filtros
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('Todos');
+
+  // Estados de modales
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showComponentModal, setShowComponentModal] = useState(false);
+  const [showEditComponentModal, setShowEditComponentModal] = useState(false);
   const [editingEquipment, setEditingEquipment] = useState<any>(null);
+  const [editingComponent, setEditingComponent] = useState<any>(null);
 
-  // Form states
+  // Datos de formularios
   const [formData, setFormData] = useState({
     nombre: '',
     codigo: '',
@@ -61,57 +68,87 @@ export function EquipmentManagement() {
     criticidadId: '',
   });
 
-  // Obtener estados únicos
+  const [editComponentForm, setEditComponentForm] = useState({
+    nombre: '',
+    numeroParte: '',
+    descripcion: '',
+    criticidadId: '',
+  });
+
+  // Catálogos
+  const [tiposEquipo, setTiposEquipo] = useState<any[]>([]);
+  const [ubicaciones, setUbicaciones] = useState<any[]>([]);
+  const [estados, setEstados] = useState<any[]>([]);
+  const [criticidades, setCriticidades] = useState<any[]>([]);
+
+  // Estados únicos para filtro
   const statuses = ['Todos', ...new Set(equipments.map(eq => eq.status))];
+
+  // Convertir valor a número o null
+  const toNumber = (val: any) => val !== '' && val !== null ? Number(val) : null;
+
+  /* =======================
+     CARGAR DATOS DE CATÁLOGOS
+     ======================= */
+  const loadCatalogData = async () => {
+    try {
+      const [tiposRes, ubicacionesRes, estadosRes, criticidadesRes] = await Promise.all([
+        fetch('http://localhost:8080/api/tipos-equipo'),
+        fetch('http://localhost:8080/api/ubicaciones'),
+        fetch('http://localhost:8080/api/estados'),
+        fetch('http://localhost:8080/api/criticidades'),
+      ]);
+
+      if (tiposRes.ok) setTiposEquipo(await tiposRes.json());
+      if (ubicacionesRes.ok) setUbicaciones(await ubicacionesRes.json());
+      if (estadosRes.ok) setEstados(await estadosRes.json());
+      if (criticidadesRes.ok) setCriticidades(await criticidadesRes.json());
+    } catch (err) {
+      console.error('Error cargando catálogos:', err);
+    }
+  };
 
   /* =======================
      CARGAR EQUIPOS BACKEND
      ======================= */
   useEffect(() => {
     loadEquipments();
+    loadCatalogData();
   }, []);
 
-  const loadEquipments = async () => {
+  const loadEquipments = async (keepSelection = false, selectedId?: string) => {
     try {
-      console.log('Iniciando carga de equipos desde:', API_URL);
       const response = await fetch(API_URL);
-      console.log('Respuesta status:', response.status);
-      
       if (!response.ok) throw new Error(`Error al cargar equipos: ${response.status}`);
 
       const data = await response.json();
-      console.log('Datos recibidos:', data);
-
-      // Adaptar backend → frontend
       const mapped: Equipment[] = data.map((eq: any) => ({
         id: String(eq.id),
         name: eq.nombre,
         code: eq.codigo,
         nombre: eq.nombre,
         codigo: eq.codigo,
-
-        // Catálogos
         type: eq.tipo?.nombre ?? 'N/A',
         status: eq.estado?.nombre ?? 'N/A',
         location: eq.ubicacion?.nombre ?? 'N/A',
-
-        // Criticidad
         criticality: eq.criticidad?.nivel ?? 'Media',
-
-        // IDs para edición
         tipoId: eq.tipo?.id,
         ubicacionId: eq.ubicacion?.id,
         estadoId: eq.estado?.id,
         criticidadId: eq.criticidad?.id,
-
-        // Componentes (si están disponibles)
         components: eq.componentes || [],
       }));
 
-      console.log('Equipos mapeados:', mapped);
       setEquipments(mapped);
+
+      if (keepSelection) {
+        const idToKeep = selectedId ?? selectedEquipment?.id;
+        if (idToKeep) {
+          const refreshed = mapped.find(eq => eq.id === String(idToKeep)) || null;
+          setSelectedEquipment(refreshed);
+        }
+      }
     } catch (err: any) {
-      console.error('Error en loadEquipments:', err);
       setError(err.message);
     } finally {
       setLoading(false);
@@ -127,40 +164,30 @@ export function EquipmentManagement() {
       return;
     }
 
-    const newEquipo = {
-      nombre: formData.nombre,
-      codigo: formData.codigo,
-      tipo: formData.tipoId ? { id: formData.tipoId } : null,
-      ubicacion: formData.ubicacionId ? { id: formData.ubicacionId } : null,
-      estado: formData.estadoId ? { id: formData.estadoId } : null,
-      criticidad: formData.criticidadId ? { id: formData.criticidadId } : null,
-    };
-
-    console.log('Creando equipo:', newEquipo);
-
     try {
       const response = await fetch('http://localhost:8080/api/equipos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newEquipo),
+        body: JSON.stringify({
+          nombre: formData.nombre,
+          codigo: formData.codigo,
+          tipoId: toNumber(formData.tipoId),
+          ubicacionId: toNumber(formData.ubicacionId),
+          estadoId: toNumber(formData.estadoId),
+          criticidadId: toNumber(formData.criticidadId),
+        }),
       });
-
-      console.log('Response status:', response.status);
 
       if (response.ok) {
         const responseData = await response.json();
-        console.log('Equipo creado:', responseData);
-        loadEquipments();
+        loadEquipments(true, responseData.id ? String(responseData.id) : undefined);
         setShowCreateModal(false);
         setFormData({ nombre: '', codigo: '', tipoId: '', ubicacionId: '', estadoId: '', criticidadId: '' });
         alert('Equipo creado exitosamente');
       } else {
-        const errorData = await response.text();
-        console.error('Error response:', errorData);
-        alert('Error al crear equipo: ' + errorData);
+        alert('Error al crear equipo: ' + await response.text());
       }
     } catch (err) {
-      console.error('Error en handleCreateEquipment:', err);
       alert('Error: ' + err);
     }
   };
@@ -171,39 +198,28 @@ export function EquipmentManagement() {
   const handleEditEquipment = async () => {
     if (!editingEquipment?.id) return;
 
-    const updatedEquipo = {
-      nombre: editingEquipment.nombre,
-      codigo: editingEquipment.codigo,
-      tipo: editingEquipment.tipoId ? { id: editingEquipment.tipoId } : null,
-      ubicacion: editingEquipment.ubicacionId ? { id: editingEquipment.ubicacionId } : null,
-      estado: editingEquipment.estadoId ? { id: editingEquipment.estadoId } : null,
-      criticidad: editingEquipment.criticidadId ? { id: editingEquipment.criticidadId } : null,
-    };
-
-    console.log('Actualizando equipo:', updatedEquipo);
-
     try {
       const response = await fetch(`http://localhost:8080/api/equipos/${editingEquipment.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updatedEquipo),
+        body: JSON.stringify({
+          nombre: editingEquipment.nombre,
+          codigo: editingEquipment.codigo,
+          tipoId: toNumber(editingEquipment.tipoId),
+          ubicacionId: toNumber(editingEquipment.ubicacionId),
+          estadoId: toNumber(editingEquipment.estadoId),
+          criticidadId: toNumber(editingEquipment.criticidadId),
+        }),
       });
 
-      console.log('Response status:', response.status);
-
       if (response.ok) {
-        const responseData = await response.json();
-        console.log('Equipo actualizado:', responseData);
-        loadEquipments();
+        loadEquipments(true, editingEquipment.id);
         setEditingEquipment(null);
         alert('Equipo actualizado exitosamente');
       } else {
-        const errorData = await response.text();
-        console.error('Error response:', errorData);
-        alert('Error al actualizar equipo: ' + errorData);
+        alert('Error al actualizar equipo: ' + await response.text());
       }
     } catch (err) {
-      console.error('Error en handleEditEquipment:', err);
       alert('Error: ' + err);
     }
   };
@@ -220,12 +236,13 @@ export function EquipmentManagement() {
         method: 'DELETE',
       });
 
-      if (response.ok) {
-        loadEquipments();
+      if (response.ok || response.status === 204) {
         setSelectedEquipment(null);
-        alert('Equipo eliminado exitosamente');
+        await loadEquipments();
+        alert('Equipo y sus componentes eliminados exitosamente');
       } else {
-        alert('Error al eliminar equipo');
+        const errorText = await response.text();
+        alert('Error al eliminar equipo: ' + errorText);
       }
     } catch (err) {
       alert('Error: ' + err);
@@ -241,42 +258,98 @@ export function EquipmentManagement() {
       return;
     }
 
-    const newComponente = {
-      nombre: componentForm.nombre,
-      numeroParte: componentForm.numeroParte,
-      descripcion: componentForm.descripcion,
-      equipo: { id: selectedEquipment.id },
-      criticidad: componentForm.criticidadId ? { id: componentForm.criticidadId } : null,
-    };
-
-    console.log('Creando componente:', newComponente);
-
     try {
       const response = await fetch('http://localhost:8080/api/componentes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newComponente),
+        body: JSON.stringify({
+          nombre: componentForm.nombre,
+          numeroParte: componentForm.numeroParte,
+          descripcion: componentForm.descripcion,
+          equipoId: Number(selectedEquipment.id),
+          criticidadId: toNumber(componentForm.criticidadId),
+        }),
       });
 
-      console.log('Response status:', response.status);
-
       if (response.ok) {
-        const responseData = await response.json();
-        console.log('Componente creado:', responseData);
-        loadEquipments();
+        loadEquipments(true, selectedEquipment?.id);
         setShowComponentModal(false);
         setComponentForm({ nombre: '', numeroParte: '', descripcion: '', criticidadId: '' });
         alert('Componente creado exitosamente');
       } else {
-        const errorData = await response.text();
-        console.error('Error response:', errorData);
-        alert('Error al crear componente: ' + errorData);
+        alert('Error al crear componente: ' + await response.text());
       }
     } catch (err) {
-      console.error('Error en handleCreateComponent:', err);
       alert('Error: ' + err);
     }
   };
+
+  const handleEditComponent = async () => {
+    if (!editingComponent?.id || !editComponentForm.nombre || !editComponentForm.numeroParte) {
+      alert('Nombre y número de parte son requeridos');
+      return;
+    }
+
+    try {
+      const response = await fetch(`http://localhost:8080/api/componentes/${editingComponent.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nombre: editComponentForm.nombre,
+          numeroParte: editComponentForm.numeroParte,
+          descripcion: editComponentForm.descripcion,
+          equipoId: Number(selectedEquipment?.id),
+          criticidadId: toNumber(editComponentForm.criticidadId),
+        }),
+      });
+
+      if (response.ok) {
+        loadEquipments(true, selectedEquipment?.id);
+        setShowEditComponentModal(false);
+        setEditingComponent(null);
+        alert('Componente actualizado exitosamente');
+      } else {
+        alert('Error al actualizar componente: ' + await response.text());
+      }
+    } catch (err) {
+      alert('Error: ' + err);
+    }
+  };
+
+  const handleDeleteComponent = async (componentId: number) => {
+    if (!window.confirm('¿Seguro que deseas eliminar este componente?')) return;
+
+    try {
+      const response = await fetch(`http://localhost:8080/api/componentes/${componentId}`, {
+        method: 'DELETE',
+      });
+
+      // 204 No Content es el response correcto para DELETE
+      if (response.status === 204 || response.ok) {
+        // Esperar un poco y luego recargar equipos
+        setTimeout(async () => {
+          await loadEquipments(true, selectedEquipment?.id);
+        }, 200);
+        alert('Componente eliminado exitosamente');
+      } else {
+        const errorText = await response.text();
+        alert('Error al eliminar componente: ' + (errorText || `Error ${response.status}`));
+      }
+    } catch (err) {
+      alert('Error: ' + err);
+    }
+  };
+
+  const openEditComponentModal = (comp: any) => {
+    setEditingComponent(comp);
+    setEditComponentForm({
+      nombre: comp.nombre || '',
+      numeroParte: comp.numeroParte || '',
+      descripcion: comp.descripcion || '',
+      criticidadId: comp.criticidad?.id ? String(comp.criticidad.id) : '',
+    });
+    setShowEditComponentModal(true);
+  };;
   const filteredEquipment = equipments.filter(eq => {
     const matchesSearch = 
       eq.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -470,9 +543,25 @@ export function EquipmentManagement() {
                               <p className="text-xs text-gray-600 mt-1">{comp.descripcion}</p>
                             )}
                           </div>
-                          <Badge variant="outline" className="ml-2">
-                            {comp.criticidad?.nivel || 'N/A'}
-                          </Badge>
+                          <div className="flex items-center gap-2 ml-2">
+                            <Badge variant="outline">
+                              {comp.criticidad?.nivel || 'N/A'}
+                            </Badge>
+                            <button
+                              title="Editar"
+                              className="p-1 hover:bg-blue-100 rounded"
+                              onClick={() => openEditComponentModal(comp)}
+                            >
+                              <Pencil className="w-4 h-4 text-blue-600" />
+                            </button>
+                            <button
+                              title="Eliminar"
+                              className="p-1 hover:bg-red-100 rounded"
+                              onClick={() => handleDeleteComponent(comp.id)}
+                            >
+                              <Trash className="w-4 h-4 text-red-600" />
+                            </button>
+                          </div>
                         </div>
                         <div className="mt-2 text-xs text-gray-500">
                           <p>Relación: Componente de {selectedEquipment.name}</p>
@@ -540,40 +629,56 @@ export function EquipmentManagement() {
               />
             </div>
             <div>
-              <label className="text-sm font-medium">Tipo de Equipo (ID)</label>
-              <Input
-                type="number"
-                placeholder="ID del tipo"
+              <label className="text-sm font-medium">Tipo de Equipo</label>
+              <select
+                className="w-full p-2 border rounded bg-white"
                 value={formData.tipoId || ''}
-                onChange={e => setFormData({...formData, tipoId: e.target.value ? (parseInt(e.target.value) as any) : null})}
-              />
+                onChange={e => setFormData({...formData, tipoId: e.target.value})}
+              >
+                <option value="">Selecciona un tipo</option>
+                {tiposEquipo.map(t => (
+                  <option key={t.id} value={t.id}>{t.nombre}</option>
+                ))}
+              </select>
             </div>
             <div>
-              <label className="text-sm font-medium">Ubicación (ID)</label>
-              <Input
-                type="number"
-                placeholder="ID de ubicación"
+              <label className="text-sm font-medium">Ubicación</label>
+              <select
+                className="w-full p-2 border rounded bg-white"
                 value={formData.ubicacionId || ''}
-                onChange={e => setFormData({...formData, ubicacionId: e.target.value ? (parseInt(e.target.value) as any) : null})}
-              />
+                onChange={e => setFormData({...formData, ubicacionId: e.target.value})}
+              >
+                <option value="">Selecciona una ubicación</option>
+                {ubicaciones.map(u => (
+                  <option key={u.id} value={u.id}>{u.nombre}</option>
+                ))}
+              </select>
             </div>
             <div>
-              <label className="text-sm font-medium">Estado (ID)</label>
-              <Input
-                type="number"
-                placeholder="ID de estado"
+              <label className="text-sm font-medium">Estado</label>
+              <select
+                className="w-full p-2 border rounded bg-white"
                 value={formData.estadoId || ''}
-                onChange={e => setFormData({...formData, estadoId: e.target.value ? (parseInt(e.target.value) as any) : null})}
-              />
+                onChange={e => setFormData({...formData, estadoId: e.target.value})}
+              >
+                <option value="">Selecciona un estado</option>
+                {estados.map(e => (
+                  <option key={e.id} value={e.id}>{e.nombre}</option>
+                ))}
+              </select>
             </div>
             <div>
-              <label className="text-sm font-medium">Criticidad (ID)</label>
-              <Input
-                type="number"
-                placeholder="ID de criticidad"
+              <label className="text-sm font-medium">Criticidad</label>
+              <select
+                className="w-full p-2 border rounded bg-white"
                 value={formData.criticidadId || ''}
-                onChange={e => setFormData({...formData, criticidadId: e.target.value ? (parseInt(e.target.value) as any) : null})}
-              />
+                onChange={e => setFormData({...formData, criticidadId: e.target.value})}
+              >
+                <option value="">Selecciona una criticidad</option>
+                {criticidades.map(c => (
+                  <option key={c.id} value={c.id}>{c.nivel}</option>
+                ))}
+              </select>
             </div>
           </div>
           <DialogFooter>
@@ -620,40 +725,56 @@ export function EquipmentManagement() {
                 />
               </div>
               <div>
-                <label className="text-sm font-medium">Tipo de Equipo (ID)</label>
-                <Input
-                  type="number"
-                  placeholder="ID del tipo"
-                  value={editingEquipment.tipoId || ''}
+                <label className="text-sm font-medium">Tipo de Equipo</label>
+                <select
+                  className="w-full p-2 border rounded bg-white"
+                  value={editingEquipment.tipoId || editingEquipment.tipo?.id || ''}
                   onChange={e => setEditingEquipment({...editingEquipment, tipoId: e.target.value ? parseInt(e.target.value) : null})}
-                />
+                >
+                  <option value="">Selecciona un tipo</option>
+                  {tiposEquipo.map(t => (
+                    <option key={t.id} value={t.id}>{t.nombre}</option>
+                  ))}
+                </select>
               </div>
               <div>
-                <label className="text-sm font-medium">Ubicación (ID)</label>
-                <Input
-                  type="number"
-                  placeholder="ID de ubicación"
-                  value={editingEquipment.ubicacionId || ''}
+                <label className="text-sm font-medium">Ubicación</label>
+                <select
+                  className="w-full p-2 border rounded bg-white"
+                  value={editingEquipment.ubicacionId || editingEquipment.ubicacion?.id || ''}
                   onChange={e => setEditingEquipment({...editingEquipment, ubicacionId: e.target.value ? parseInt(e.target.value) : null})}
-                />
+                >
+                  <option value="">Selecciona una ubicación</option>
+                  {ubicaciones.map(u => (
+                    <option key={u.id} value={u.id}>{u.nombre}</option>
+                  ))}
+                </select>
               </div>
               <div>
-                <label className="text-sm font-medium">Estado (ID)</label>
-                <Input
-                  type="number"
-                  placeholder="ID de estado"
-                  value={editingEquipment.estadoId || ''}
+                <label className="text-sm font-medium">Estado</label>
+                <select
+                  className="w-full p-2 border rounded bg-white"
+                  value={editingEquipment.estadoId || editingEquipment.estado?.id || ''}
                   onChange={e => setEditingEquipment({...editingEquipment, estadoId: e.target.value ? parseInt(e.target.value) : null})}
-                />
+                >
+                  <option value="">Selecciona un estado</option>
+                  {estados.map(e => (
+                    <option key={e.id} value={e.id}>{e.nombre}</option>
+                  ))}
+                </select>
               </div>
               <div>
-                <label className="text-sm font-medium">Criticidad (ID)</label>
-                <Input
-                  type="number"
-                  placeholder="ID de criticidad"
-                  value={editingEquipment.criticidadId || ''}
+                <label className="text-sm font-medium">Criticidad</label>
+                <select
+                  className="w-full p-2 border rounded bg-white"
+                  value={editingEquipment.criticidadId || editingEquipment.criticidad?.id || ''}
                   onChange={e => setEditingEquipment({...editingEquipment, criticidadId: e.target.value ? parseInt(e.target.value) : null})}
-                />
+                >
+                  <option value="">Selecciona una criticidad</option>
+                  {criticidades.map(c => (
+                    <option key={c.id} value={c.id}>{c.nivel}</option>
+                  ))}
+                </select>
               </div>
             </div>
           )}
@@ -707,13 +828,17 @@ export function EquipmentManagement() {
               />
             </div>
             <div>
-              <label className="text-sm font-medium">Criticidad (ID)</label>
-              <Input
-                type="number"
-                placeholder="ID de criticidad"
+              <label className="text-sm font-medium">Criticidad</label>
+              <select
+                className="w-full p-2 border rounded bg-white"
                 value={componentForm.criticidadId || ''}
-                onChange={e => setComponentForm({...componentForm, criticidadId: e.target.value ? (parseInt(e.target.value) as any) : null})}
-              />
+                onChange={e => setComponentForm({...componentForm, criticidadId: e.target.value})}
+              >
+                <option value="">Selecciona una criticidad</option>
+                {criticidades.map(c => (
+                  <option key={c.id} value={c.id}>{c.nivel}</option>
+                ))}
+              </select>
             </div>
           </div>
           <DialogFooter>
@@ -725,6 +850,65 @@ export function EquipmentManagement() {
             </Button>
             <Button onClick={handleCreateComponent} className="bg-green-600 hover:bg-green-700">
               Crear Componente
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* MODAL EDITAR COMPONENTE */}
+      <Dialog open={showEditComponentModal} onOpenChange={setShowEditComponentModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar Componente</DialogTitle>
+            <DialogDescription>
+              Modifica los datos del componente
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium">Nombre</label>
+              <Input
+                placeholder="Nombre del componente"
+                value={editComponentForm.nombre}
+                onChange={e => setEditComponentForm({ ...editComponentForm, nombre: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Número de Parte</label>
+              <Input
+                placeholder="Número de parte"
+                value={editComponentForm.numeroParte}
+                onChange={e => setEditComponentForm({ ...editComponentForm, numeroParte: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Descripción</label>
+              <Input
+                placeholder="Descripción"
+                value={editComponentForm.descripcion}
+                onChange={e => setEditComponentForm({ ...editComponentForm, descripcion: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Criticidad</label>
+              <select
+                className="w-full p-2 border rounded bg-white"
+                value={editComponentForm.criticidadId || ''}
+                onChange={e => setEditComponentForm({ ...editComponentForm, criticidadId: e.target.value })}
+              >
+                <option value="">Selecciona una criticidad</option>
+                {criticidades.map(c => (
+                  <option key={c.id} value={c.id}>{c.nivel}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowEditComponentModal(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleEditComponent} className="bg-blue-600 hover:bg-blue-700">
+              Guardar Cambios
             </Button>
           </DialogFooter>
         </DialogContent>

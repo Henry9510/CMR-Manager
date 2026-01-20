@@ -2,6 +2,7 @@ package com.maint_up.backend.controller;
 
 import com.maint_up.backend.model.Componente;
 import com.maint_up.backend.service.ComponenteService;
+import com.maint_up.backend.dto.ComponenteDTO;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -10,7 +11,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/componentes")
-@CrossOrigin(origins = "http://localhost:5173/")
+@CrossOrigin(origins = "http://localhost:5173")
 public class ComponenteController {
 
     private final ComponenteService componenteService;
@@ -22,18 +23,16 @@ public class ComponenteController {
     // GET: Obtener todos los componentes
     @GetMapping
     public ResponseEntity<List<Componente>> obtenerTodos() {
-        List<Componente> componentes = componenteService.obtenerTodos();
-        return ResponseEntity.ok(componentes);
+        return ResponseEntity.ok(componenteService.obtenerTodos());
     }
 
     // GET: Obtener componentes por equipo
     @GetMapping("/por-equipo/{equipoId}")
     public ResponseEntity<List<Componente>> obtenerPorEquipo(@PathVariable Long equipoId) {
         try {
-            List<Componente> componentes = componenteService.obtenerPorEquipo(equipoId);
-            return ResponseEntity.ok(componentes);
+            return ResponseEntity.ok(componenteService.obtenerPorEquipo(equipoId));
         } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+            return ResponseEntity.notFound().build();
         }
     }
 
@@ -41,32 +40,42 @@ public class ComponenteController {
     @GetMapping("/{id}")
     public ResponseEntity<Componente> obtenerPorId(@PathVariable Long id) {
         try {
-            Componente componente = componenteService.obtenerPorId(id);
-            return ResponseEntity.ok(componente);
+            return ResponseEntity.ok(componenteService.obtenerPorId(id));
         } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+            return ResponseEntity.notFound().build();
         }
     }
 
     // POST: Crear nuevo componente
     @PostMapping
-    public ResponseEntity<?> crearComponente(@RequestBody Componente componente) {
+    public ResponseEntity<?> crearComponente(@RequestBody ComponenteDTO componenteDTO) {
         try {
-            Componente nuevoComponente = componenteService.crearComponente(componente);
+            Componente nuevoComponente = componenteService.crearComponente(componenteDTO);
             return ResponseEntity.status(HttpStatus.CREATED).body(nuevoComponente);
         } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    // PUT: Actualizar componente
+    @PutMapping("/{id}")
+    public ResponseEntity<?> actualizarComponente(@PathVariable Long id, @RequestBody ComponenteDTO componenteDTO) {
+        try {
+            Componente actualizado = componenteService.actualizarComponente(id, componenteDTO);
+            return ResponseEntity.ok(actualizado);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 
     // DELETE: Eliminar componente
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> eliminarComponente(@PathVariable Long id) {
+    public ResponseEntity<Void> eliminarComponente(@PathVariable Long id) {
         try {
             componenteService.eliminarComponente(id);
-            return ResponseEntity.ok("Componente eliminado correctamente");
+            return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
         } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+            return ResponseEntity.notFound().build();
         }
     }
 }

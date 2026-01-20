@@ -10,4 +10,5 @@ public class BackendMaintUpApplication {
 		SpringApplication.run(BackendMaintUpApplication.class, args);
 	}
 
+
 }

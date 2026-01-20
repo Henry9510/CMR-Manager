@@ -1,7 +1,12 @@
 package com.maint_up.backend.service;
 
 import com.maint_up.backend.model.Equipo;
+import com.maint_up.backend.dto.EquipoDTO;
 import com.maint_up.backend.repository.EquipoRepository;
+import com.maint_up.backend.repository.TipoEquipoRepository;
+import com.maint_up.backend.repository.UbicacionRepository;
+import com.maint_up.backend.repository.EstadoEquipoRepository;
+import com.maint_up.backend.repository.CriticidadRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -10,17 +15,27 @@ import java.util.List;
 public class EquipoService {
 
     private final EquipoRepository equipoRepository;
+    private final TipoEquipoRepository tipoEquipoRepository;
+    private final UbicacionRepository ubicacionRepository;
+    private final EstadoEquipoRepository estadoEquipoRepository;
+    private final CriticidadRepository criticidadRepository;
 
-    public EquipoService(EquipoRepository equipoRepository) {
+    public EquipoService(EquipoRepository equipoRepository,
+                        TipoEquipoRepository tipoEquipoRepository,
+                        UbicacionRepository ubicacionRepository,
+                        EstadoEquipoRepository estadoEquipoRepository,
+                        CriticidadRepository criticidadRepository) {
         this.equipoRepository = equipoRepository;
+        this.tipoEquipoRepository = tipoEquipoRepository;
+        this.ubicacionRepository = ubicacionRepository;
+        this.estadoEquipoRepository = estadoEquipoRepository;
+        this.criticidadRepository = criticidadRepository;
     }
 
-    // Obtener todos los equipos
     public List<Equipo> obtenerTodos() {
         return equipoRepository.findAll();
     }
 
-    // Obtener equipo por ID
     public Equipo obtenerPorId(Long id) {
         if (id == null) {
             throw new IllegalArgumentException("El ID del equipo no puede ser nulo");
@@ -29,45 +44,48 @@ public class EquipoService {
                 .orElseThrow(() -> new RuntimeException("Equipo no encontrado"));
     }
 
-    // Crear equipo
-    public Equipo crearEquipo(Equipo equipo) {
-        if (equipo == null || equipo.getCodigo() == null || equipo.getNombre() == null) {
-            throw new IllegalArgumentException("El equipo, nombre y código no pueden ser nulos");
+    public Equipo crearEquipo(EquipoDTO dto) {
+        if (dto == null || dto.nombre == null || dto.codigo == null) {
+            throw new IllegalArgumentException("Nombre y código son requeridos");
         }
-        if (equipoRepository.existsByCodigo(equipo.getCodigo())) {
+        if (equipoRepository.existsByCodigo(dto.codigo)) {
             throw new RuntimeException("Ya existe un equipo con ese código");
         }
+        
+        Equipo equipo = new Equipo();
+        mapearDtoAEquipo(dto, equipo);
         return equipoRepository.save(equipo);
     }
 
-    // Actualizar equipo
-    public Equipo actualizarEquipo(Long id, Equipo equipo) {
+    public Equipo actualizarEquipo(Long id, EquipoDTO dto) {
         Equipo existente = obtenerPorId(id);
-
-        existente.setNombre(equipo.getNombre());
-        existente.setCodigo(equipo.getCodigo());
-        existente.setUbicacion(equipo.getUbicacion());
-        if (equipo.getTipo() != null) {
-            existente.setTipo(equipo.getTipo());
-        }
-        if (equipo.getEstado() != null) {
-            existente.setEstado(equipo.getEstado());
-        }
-        if (equipo.getCriticidad() != null) {
-            existente.setCriticidad(equipo.getCriticidad());
-        }
-
+        mapearDtoAEquipo(dto, existente);
         return equipoRepository.save(existente);
     }
 
-    // Eliminar equipo
     public void eliminarEquipo(Long id) {
         if (id == null) {
             throw new IllegalArgumentException("El ID del equipo no puede ser nulo");
         }
-        if (!equipoRepository.existsById(id)) {
-            throw new RuntimeException("Equipo no encontrado");
+        Equipo equipo = obtenerPorId(id);
+        equipoRepository.delete(equipo);
+    }
+
+    private void mapearDtoAEquipo(EquipoDTO dto, Equipo equipo) {
+        equipo.setNombre(dto.nombre);
+        equipo.setCodigo(dto.codigo);
+        
+        if (dto.tipoId != null) {
+            equipo.setTipo(tipoEquipoRepository.findById(dto.tipoId).orElse(null));
         }
-        equipoRepository.deleteById(id);
+        if (dto.ubicacionId != null) {
+            equipo.setUbicacion(ubicacionRepository.findById(dto.ubicacionId).orElse(null));
+        }
+        if (dto.estadoId != null) {
+            equipo.setEstado(estadoEquipoRepository.findById(dto.estadoId).orElse(null));
+        }
+        if (dto.criticidadId != null) {
+            equipo.setCriticidad(criticidadRepository.findById(dto.criticidadId).orElse(null));
+        }
     }
 }
