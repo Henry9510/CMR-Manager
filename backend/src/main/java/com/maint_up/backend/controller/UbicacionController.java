@@ -2,13 +2,13 @@ package com.maint_up.backend.controller;
 
 import com.maint_up.backend.model.Ubicacion;
 import com.maint_up.backend.repository.UbicacionRepository;
+import org.springframework.lang.NonNull;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/ubicaciones")
-@CrossOrigin(origins = "http://localhost:5173")
 public class UbicacionController {
 
     private final UbicacionRepository ubicacionRepository;
@@ -23,13 +23,13 @@ public class UbicacionController {
     }
 
     @GetMapping("/{id}")
-    public Ubicacion obtenerPorId(@PathVariable Long id) {
+    public Ubicacion obtenerPorId(@PathVariable @NonNull Long id) {
         return ubicacionRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Ubicación no encontrada"));
     }
 
     @PostMapping
-    public Ubicacion crear(@RequestBody Ubicacion ubicacion) {
+    public Ubicacion crear(@RequestBody @NonNull Ubicacion ubicacion) {
         if (ubicacion.getNombre() == null || ubicacion.getNombre().isEmpty()) {
             throw new IllegalArgumentException("El nombre es requerido");
         }
@@ -37,7 +37,7 @@ public class UbicacionController {
     }
 
     @PutMapping("/{id}")
-    public Ubicacion actualizar(@PathVariable Long id, @RequestBody Ubicacion ubicacion) {
+    public Ubicacion actualizar(@PathVariable @NonNull Long id, @RequestBody @NonNull Ubicacion ubicacion) {
         Ubicacion existente = ubicacionRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Ubicación no encontrada"));
         
@@ -49,7 +49,7 @@ public class UbicacionController {
     }
 
     @DeleteMapping("/{id}")
-    public void eliminar(@PathVariable Long id) {
+    public void eliminar(@PathVariable @NonNull Long id) {
         ubicacionRepository.deleteById(id);
     }
 }

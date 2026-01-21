@@ -5,13 +5,13 @@ import com.maint_up.backend.service.ComponenteService;
 import com.maint_up.backend.dto.ComponenteDTO;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.lang.NonNull;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/componentes")
-@CrossOrigin(origins = "http://localhost:5173")
 public class ComponenteController {
 
     private final ComponenteService componenteService;
@@ -28,7 +28,7 @@ public class ComponenteController {
 
     // GET: Obtener componentes por equipo
     @GetMapping("/por-equipo/{equipoId}")
-    public ResponseEntity<List<Componente>> obtenerPorEquipo(@PathVariable Long equipoId) {
+    public ResponseEntity<List<Componente>> obtenerPorEquipo(@PathVariable @NonNull Long equipoId) {
         try {
             return ResponseEntity.ok(componenteService.obtenerPorEquipo(equipoId));
         } catch (RuntimeException e) {
@@ -38,7 +38,7 @@ public class ComponenteController {
 
     // GET: Obtener componente por ID
     @GetMapping("/{id}")
-    public ResponseEntity<Componente> obtenerPorId(@PathVariable Long id) {
+    public ResponseEntity<Componente> obtenerPorId(@PathVariable @NonNull Long id) {
         try {
             return ResponseEntity.ok(componenteService.obtenerPorId(id));
         } catch (RuntimeException e) {
@@ -48,7 +48,7 @@ public class ComponenteController {
 
     // POST: Crear nuevo componente
     @PostMapping
-    public ResponseEntity<?> crearComponente(@RequestBody ComponenteDTO componenteDTO) {
+    public ResponseEntity<?> crearComponente(@RequestBody @NonNull ComponenteDTO componenteDTO) {
         try {
             Componente nuevoComponente = componenteService.crearComponente(componenteDTO);
             return ResponseEntity.status(HttpStatus.CREATED).body(nuevoComponente);
@@ -59,7 +59,7 @@ public class ComponenteController {
 
     // PUT: Actualizar componente
     @PutMapping("/{id}")
-    public ResponseEntity<?> actualizarComponente(@PathVariable Long id, @RequestBody ComponenteDTO componenteDTO) {
+    public ResponseEntity<?> actualizarComponente(@PathVariable @NonNull Long id, @RequestBody @NonNull ComponenteDTO componenteDTO) {
         try {
             Componente actualizado = componenteService.actualizarComponente(id, componenteDTO);
             return ResponseEntity.ok(actualizado);
@@ -70,12 +70,13 @@ public class ComponenteController {
 
     // DELETE: Eliminar componente
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> eliminarComponente(@PathVariable Long id) {
+    public ResponseEntity<Void> eliminarComponente(@PathVariable @NonNull Long id) {
         try {
             componenteService.eliminarComponente(id);
             return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
         } catch (RuntimeException e) {
-            return ResponseEntity.notFound().build();
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
     }
+
 }

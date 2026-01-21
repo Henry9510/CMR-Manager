@@ -7,12 +7,17 @@ import com.maint_up.backend.repository.TipoEquipoRepository;
 import com.maint_up.backend.repository.UbicacionRepository;
 import com.maint_up.backend.repository.EstadoEquipoRepository;
 import com.maint_up.backend.repository.CriticidadRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
 @Service
 public class EquipoService {
+
+    private static final Logger logger = LoggerFactory.getLogger(EquipoService.class);
 
     private final EquipoRepository equipoRepository;
     private final TipoEquipoRepository tipoEquipoRepository;
@@ -44,31 +49,33 @@ public class EquipoService {
                 .orElseThrow(() -> new RuntimeException("Equipo no encontrado"));
     }
 
-    public Equipo crearEquipo(EquipoDTO dto) {
+    public Equipo crearEquipo(@NonNull EquipoDTO dto) {
         if (dto == null || dto.nombre == null || dto.codigo == null) {
+            logger.warn("Intento de crear equipo con datos inválidos");
             throw new IllegalArgumentException("Nombre y código son requeridos");
         }
         if (equipoRepository.existsByCodigo(dto.codigo)) {
+            logger.warn("Intento de crear equipo con código duplicado: {}", dto.codigo);
             throw new RuntimeException("Ya existe un equipo con ese código");
         }
         
         Equipo equipo = new Equipo();
         mapearDtoAEquipo(dto, equipo);
-        return equipoRepository.save(equipo);
+        Equipo saved = equipoRepository.save(equipo);
+        logger.info("Equipo creado: id={}, nombre={}, codigo={}", saved.getId(), saved.getNombre(), saved.getCodigo());
+        return saved;
     }
 
-    public Equipo actualizarEquipo(Long id, EquipoDTO dto) {
+    public Equipo actualizarEquipo(@NonNull Long id, @NonNull EquipoDTO dto) {
         Equipo existente = obtenerPorId(id);
         mapearDtoAEquipo(dto, existente);
         return equipoRepository.save(existente);
     }
 
-    public void eliminarEquipo(Long id) {
-        if (id == null) {
-            throw new IllegalArgumentException("El ID del equipo no puede ser nulo");
-        }
+    public void eliminarEquipo(@NonNull Long id) {
         Equipo equipo = obtenerPorId(id);
         equipoRepository.delete(equipo);
+        logger.info("Equipo eliminado: id={}, nombre={}", id, equipo.getNombre());
     }
 
     private void mapearDtoAEquipo(EquipoDTO dto, Equipo equipo) {

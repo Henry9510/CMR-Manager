@@ -2,13 +2,13 @@ package com.maint_up.backend.controller;
 
 import com.maint_up.backend.model.TipoEquipo;
 import com.maint_up.backend.repository.TipoEquipoRepository;
+import org.springframework.lang.NonNull;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/tipos-equipo")
-@CrossOrigin(origins = "http://localhost:5173")
 public class TipoEquipoController {
 
     private final TipoEquipoRepository tipoEquipoRepository;
@@ -23,13 +23,13 @@ public class TipoEquipoController {
     }
 
     @GetMapping("/{id}")
-    public TipoEquipo obtenerPorId(@PathVariable Long id) {
+    public TipoEquipo obtenerPorId(@PathVariable @NonNull Long id) {
         return tipoEquipoRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("TipoEquipo no encontrado"));
     }
 
     @PostMapping
-    public TipoEquipo crear(@RequestBody TipoEquipo tipoEquipo) {
+    public TipoEquipo crear(@RequestBody @NonNull TipoEquipo tipoEquipo) {
         if (tipoEquipo.getNombre() == null || tipoEquipo.getNombre().isEmpty()) {
             throw new IllegalArgumentException("El nombre es requerido");
         }
@@ -37,7 +37,7 @@ public class TipoEquipoController {
     }
 
     @PutMapping("/{id}")
-    public TipoEquipo actualizar(@PathVariable Long id, @RequestBody TipoEquipo tipoEquipo) {
+    public TipoEquipo actualizar(@PathVariable @NonNull Long id, @RequestBody @NonNull TipoEquipo tipoEquipo) {
         TipoEquipo existente = tipoEquipoRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("TipoEquipo no encontrado"));
         
@@ -52,7 +52,7 @@ public class TipoEquipoController {
     }
 
     @DeleteMapping("/{id}")
-    public void eliminar(@PathVariable Long id) {
+    public void eliminar(@PathVariable @NonNull Long id) {
         tipoEquipoRepository.deleteById(id);
     }
 }

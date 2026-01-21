@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 import {
   Card,
   CardContent,
@@ -160,7 +161,7 @@ export function EquipmentManagement() {
      ======================= */
   const handleCreateEquipment = async () => {
     if (!formData.nombre || !formData.codigo) {
-      alert('Nombre y código son requeridos');
+      toast.error('Nombre y código son requeridos');
       return;
     }
 
@@ -183,12 +184,12 @@ export function EquipmentManagement() {
         loadEquipments(true, responseData.id ? String(responseData.id) : undefined);
         setShowCreateModal(false);
         setFormData({ nombre: '', codigo: '', tipoId: '', ubicacionId: '', estadoId: '', criticidadId: '' });
-        alert('Equipo creado exitosamente');
+        toast.success('Equipo creado exitosamente');
       } else {
-        alert('Error al crear equipo: ' + await response.text());
+        toast.error(`Error al crear equipo: ${await response.text()}`);
       }
     } catch (err) {
-      alert('Error: ' + err);
+      toast.error(`Error: ${err}`);
     }
   };
 
@@ -215,12 +216,12 @@ export function EquipmentManagement() {
       if (response.ok) {
         loadEquipments(true, editingEquipment.id);
         setEditingEquipment(null);
-        alert('Equipo actualizado exitosamente');
+        toast.success('Equipo actualizado exitosamente');
       } else {
-        alert('Error al actualizar equipo: ' + await response.text());
+        toast.error(`Error al actualizar equipo: ${await response.text()}`);
       }
     } catch (err) {
-      alert('Error: ' + err);
+      toast.error(`Error: ${err}`);
     }
   };
 
@@ -239,13 +240,13 @@ export function EquipmentManagement() {
       if (response.ok || response.status === 204) {
         setSelectedEquipment(null);
         await loadEquipments();
-        alert('Equipo y sus componentes eliminados exitosamente');
+        toast.success('Equipo y sus componentes eliminados exitosamente');
       } else {
         const errorText = await response.text();
-        alert('Error al eliminar equipo: ' + errorText);
+        toast.error(`Error al eliminar equipo: ${errorText}`);
       }
     } catch (err) {
-      alert('Error: ' + err);
+      toast.error(`Error: ${err}`);
     }
   };
 
@@ -254,7 +255,7 @@ export function EquipmentManagement() {
      ======================= */
   const handleCreateComponent = async () => {
     if (!selectedEquipment?.id || !componentForm.nombre || !componentForm.numeroParte) {
-      alert('Nombre y número de parte son requeridos');
+      toast.error('Nombre y número de parte son requeridos');
       return;
     }
 
@@ -275,18 +276,18 @@ export function EquipmentManagement() {
         loadEquipments(true, selectedEquipment?.id);
         setShowComponentModal(false);
         setComponentForm({ nombre: '', numeroParte: '', descripcion: '', criticidadId: '' });
-        alert('Componente creado exitosamente');
+        toast.success('Componente creado exitosamente');
       } else {
-        alert('Error al crear componente: ' + await response.text());
+        toast.error(`Error al crear componente: ${await response.text()}`);
       }
     } catch (err) {
-      alert('Error: ' + err);
+      toast.error(`Error: ${err}`);
     }
   };
 
   const handleEditComponent = async () => {
     if (!editingComponent?.id || !editComponentForm.nombre || !editComponentForm.numeroParte) {
-      alert('Nombre y número de parte son requeridos');
+      toast.error('Nombre y número de parte son requeridos');
       return;
     }
 
@@ -307,12 +308,12 @@ export function EquipmentManagement() {
         loadEquipments(true, selectedEquipment?.id);
         setShowEditComponentModal(false);
         setEditingComponent(null);
-        alert('Componente actualizado exitosamente');
+        toast.success('Componente actualizado exitosamente');
       } else {
-        alert('Error al actualizar componente: ' + await response.text());
+        toast.error(`Error al actualizar componente: ${await response.text()}`);
       }
     } catch (err) {
-      alert('Error: ' + err);
+      toast.error(`Error: ${err}`);
     }
   };
 
@@ -330,13 +331,13 @@ export function EquipmentManagement() {
         setTimeout(async () => {
           await loadEquipments(true, selectedEquipment?.id);
         }, 200);
-        alert('Componente eliminado exitosamente');
+        toast.success('Componente eliminado exitosamente');
       } else {
         const errorText = await response.text();
-        alert('Error al eliminar componente: ' + (errorText || `Error ${response.status}`));
+        toast.error(`Error al eliminar componente: ${errorText || `Error ${response.status}`}`);
       }
     } catch (err) {
-      alert('Error: ' + err);
+      toast.error(`Error: ${err}`);
     }
   };
 

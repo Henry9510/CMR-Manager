@@ -1,48 +1,78 @@
--- Insertar datos de prueba en la base de datos
-
--- Insertar ubicaciones (genéricas - líneas de producción)
-INSERT INTO ubicaciones (nombre) VALUES ('Línea de Producción 1');
-INSERT INTO ubicaciones (nombre) VALUES ('Línea de Producción 2');
-INSERT INTO ubicaciones (nombre) VALUES ('Línea de Producción 3');
-INSERT INTO ubicaciones (nombre) VALUES ('Área de Mantenimiento');
-INSERT INTO ubicaciones (nombre) VALUES ('Almacén de Equipos');
-INSERT INTO ubicaciones (nombre) VALUES ('Área de Pruebas');
-
--- Insertar criticidades (usando 'nivel', no 'nombre')
+INSERT INTO ubicaciones (nombre) VALUES ('Área de Dosificación Química');
+INSERT INTO ubicaciones (nombre) VALUES ('Línea de Inyección');
+INSERT INTO ubicaciones (nombre) VALUES ('Zona de Laminación Continua');
+INSERT INTO ubicaciones (nombre) VALUES ('Área de Perfilado de Acero');
+INSERT INTO ubicaciones (nombre) VALUES ('Sector de Corte Automatizado');
+INSERT INTO ubicaciones (nombre) VALUES ('Zona de Rematería');
+INSERT INTO ubicaciones (nombre) VALUES ('Área de Acabado e Instalación');
+INSERT INTO ubicaciones (nombre) VALUES ('Sección de Extrusión de Perfiles');
+INSERT INTO ubicaciones (nombre) VALUES ('Almacén de Productos Terminados');
+INSERT INTO ubicaciones (nombre) VALUES ('Taller Central de Mantenimiento');
 INSERT INTO criticidades (nivel) VALUES ('Baja');
 INSERT INTO criticidades (nivel) VALUES ('Media');
 INSERT INTO criticidades (nivel) VALUES ('Alta');
 INSERT INTO criticidades (nivel) VALUES ('Crítica');
-
--- Insertar tipos de equipo
-INSERT INTO tipo_equipo (nombre, descripcion) VALUES ('Máquina CNC', 'Centro de mecanizado numérico');
-INSERT INTO tipo_equipo (nombre, descripcion) VALUES ('Prensa Hidráulica', 'Prensa industrial de alta presión');
-INSERT INTO tipo_equipo (nombre, descripcion) VALUES ('Tornos', 'Torno automático y manual');
-INSERT INTO tipo_equipo (nombre, descripcion) VALUES ('Compresor', 'Compresor de aire industrial');
-INSERT INTO tipo_equipo (nombre, descripcion) VALUES ('Banda Transportadora', 'Sistema de transporte automático');
-
--- Insertar estados de equipo
+INSERT INTO tipo_equipo (nombre, descripcion) VALUES ('Sistema de Inyección de Poliisocianurato', 'Equipo principal de inyección continua de núcleo PIR con dosificación automática');
+INSERT INTO tipo_equipo (nombre, descripcion) VALUES ('Rodillos de Perfilado de Acero', 'Sistema de rodillos para conformado y perfilado de chapas de acero estructural');
+INSERT INTO tipo_equipo (nombre, descripcion) VALUES ('Sierra de Corte Automatizada', 'Máquina de corte de precisión para paneles hasta 16 metros con disco de alta velocidad');
+INSERT INTO tipo_equipo (nombre, descripcion) VALUES ('Unidad de Dosificación Química', 'Sistema de dosificación y mezclamiento químico para control de densidad PIR 33-42 kg/m³');
+INSERT INTO tipo_equipo (nombre, descripcion) VALUES ('Tren de Laminación Continua', 'Prensa de rodillos para adhesión de núcleo PIR a chapas metálicas bajo presión controlada');
+INSERT INTO tipo_equipo (nombre, descripcion) VALUES ('Máquina Dobladora de Precisión', 'Equipo de rematería para accesorios complementarios: alabardillas, cumbreras, canales');
+INSERT INTO tipo_equipo (nombre, descripcion) VALUES ('Equipos de Corte para Instalaciones', 'Sierras manuales y caladoras para acabado de paneles de hasta 200mm de espesor');
+INSERT INTO tipo_equipo (nombre, descripcion) VALUES ('Montacargas Industrial', 'Equipos de logística para apilamiento y movimiento de paquetes de paneles terminados');
+INSERT INTO tipo_equipo (nombre, descripcion) VALUES ('Unidades de Refrigeración Especial', 'Equipos para fabricación de cámaras frigoríficas hasta -70°C con evaporadores');
+INSERT INTO tipo_equipo (nombre, descripcion) VALUES ('Sistemas de Extrusión de Perfiles', 'Máquina de extrusión de perfiles PVC para perfiles térmicos y sanitarios');
 INSERT INTO estado_equipo (nombre) VALUES ('Operativo');
-INSERT INTO estado_equipo (nombre) VALUES ('Mantenimiento');
-INSERT INTO estado_equipo (nombre) VALUES ('Fuera de servicio');
+INSERT INTO estado_equipo (nombre) VALUES ('Mantenimiento Preventivo');
 INSERT INTO estado_equipo (nombre) VALUES ('Reparación');
-
--- Insertar equipos
-INSERT INTO equipos (nombre, codigo, ubicacion_id, tipo_id, estado_id, criticidad_id) VALUES ('CNC-001', 'EQU-001', 1, 1, 1, 3);
-INSERT INTO equipos (nombre, codigo, ubicacion_id, tipo_id, estado_id, criticidad_id) VALUES ('Prensa Hidráulica 1', 'EQU-002', 2, 2, 1, 2);
-INSERT INTO equipos (nombre, codigo, ubicacion_id, tipo_id, estado_id, criticidad_id) VALUES ('Torno Automático', 'EQU-003', 3, 3, 1, 2);
-INSERT INTO equipos (nombre, codigo, ubicacion_id, tipo_id, estado_id, criticidad_id) VALUES ('Compresor Principal', 'EQU-004', 4, 4, 1, 3);
-INSERT INTO equipos (nombre, codigo, ubicacion_id, tipo_id, estado_id, criticidad_id) VALUES ('Banda Transportadora A', 'EQU-005', 3, 5, 2, 2);
-INSERT INTO equipos (nombre, codigo, ubicacion_id, tipo_id, estado_id, criticidad_id) VALUES ('Soldadora Robótica', 'EQU-006', 6, 1, 1, 4);
-INSERT INTO equipos (nombre, codigo, ubicacion_id, tipo_id, estado_id, criticidad_id) VALUES ('Cortadora Láser', 'EQU-007', 5, 2, 3, 4);
-
--- Insertar componentes
-INSERT INTO componente (nombre, numero_parte, equipo_id) VALUES ('Motor Principal', 'MOT-001', 1);
-INSERT INTO componente (nombre, numero_parte, equipo_id) VALUES ('Eje de transmisión', 'EJE-001', 1);
-INSERT INTO componente (nombre, numero_parte, equipo_id) VALUES ('Cilindro Hidráulico', 'CIL-001', 2);
-INSERT INTO componente (nombre, numero_parte, equipo_id) VALUES ('Válvula de control', 'VAL-001', 2);
-INSERT INTO componente (nombre, numero_parte, equipo_id) VALUES ('Rodamiento SKF', 'ROD-001', 3);
-INSERT INTO componente (nombre, numero_parte, equipo_id) VALUES ('Correa dentada', 'COR-001', 5);
-INSERT INTO componente (nombre, numero_parte, equipo_id) VALUES ('Pistola neumática', 'PIS-001', 4);
-INSERT INTO componente (nombre, numero_parte, equipo_id) VALUES ('Sensor óptico', 'SEN-001', 6);
-INSERT INTO componente (nombre, numero_parte, equipo_id) VALUES ('Cable de control', 'CAB-001', 7);
+INSERT INTO estado_equipo (nombre) VALUES ('Parado Temporal');
+INSERT INTO estado_equipo (nombre) VALUES ('Fuera de Servicio');
+INSERT INTO equipos (nombre, codigo, ubicacion_id, tipo_id, estado_id, criticidad_id) VALUES ('Inyector PIR 1000L/min - Línea A', 'INY-001-2024', 2, 1, 1, 4);
+INSERT INTO equipos (nombre, codigo, ubicacion_id, tipo_id, estado_id, criticidad_id) VALUES ('Dosificador Químico Automático', 'DOS-001-2024', 1, 4, 1, 4);
+INSERT INTO equipos (nombre, codigo, ubicacion_id, tipo_id, estado_id, criticidad_id) VALUES ('Rodillo Perfilador N°1 - Acero', 'ROD-001-2024', 4, 2, 1, 3);
+INSERT INTO equipos (nombre, codigo, ubicacion_id, tipo_id, estado_id, criticidad_id) VALUES ('Prensa Laminación Continua 2.0m', 'PRL-001-2024', 3, 5, 1, 4);
+INSERT INTO equipos (nombre, codigo, ubicacion_id, tipo_id, estado_id, criticidad_id) VALUES ('Sierra Corte Automatizada CAM-2000', 'SIE-001-2024', 5, 3, 1, 3);
+INSERT INTO equipos (nombre, codigo, ubicacion_id, tipo_id, estado_id, criticidad_id) VALUES ('Dobladora Rematería Precisión', 'DOB-001-2024', 6, 6, 1, 3);
+INSERT INTO equipos (nombre, codigo, ubicacion_id, tipo_id, estado_id, criticidad_id) VALUES ('Caladora Sierra Manual Industrial', 'CAL-001-2024', 7, 7, 1, 2);
+INSERT INTO equipos (nombre, codigo, ubicacion_id, tipo_id, estado_id, criticidad_id) VALUES ('Montacargas Toyota 3T', 'MCG-001-2024', 9, 8, 1, 2);
+INSERT INTO equipos (nombre, codigo, ubicacion_id, tipo_id, estado_id, criticidad_id) VALUES ('Unidad Refrigeración -70°C Frigo', 'REF-001-2024', 10, 9, 2, 4);
+INSERT INTO equipos (nombre, codigo, ubicacion_id, tipo_id, estado_id, criticidad_id) VALUES ('Extrusora Perfiles PVC 100mm', 'EXT-001-2024', 8, 10, 1, 3);
+INSERT INTO componente (nombre, numero_parte, equipo_id, criticidad_id) VALUES ('Bomba dosificadora de poliisocianurato', 'PIR-PUMP-001', 1, 4);
+INSERT INTO componente (nombre, numero_parte, equipo_id, criticidad_id) VALUES ('Cabezal de inyección de precisión', 'PIR-HEAD-001', 1, 4);
+INSERT INTO componente (nombre, numero_parte, equipo_id, criticidad_id) VALUES ('Sensor de presión de inyección', 'PIR-SENS-001', 1, 3);
+INSERT INTO componente (nombre, numero_parte, equipo_id, criticidad_id) VALUES ('Válvula reguladora de flujo PIR', 'PIR-VALV-001', 1, 3);
+INSERT INTO componente (nombre, numero_parte, equipo_id, criticidad_id) VALUES ('Tanque de resina A 500L', 'DOS-TNKA-001', 2, 4);
+INSERT INTO componente (nombre, numero_parte, equipo_id, criticidad_id) VALUES ('Tanque de catalizador B 200L', 'DOS-TNKB-001', 2, 4);
+INSERT INTO componente (nombre, numero_parte, equipo_id, criticidad_id) VALUES ('Mezclador de alta velocidad 5000rpm', 'DOS-MIX-001', 2, 3);
+INSERT INTO componente (nombre, numero_parte, equipo_id, criticidad_id) VALUES ('Controlador PLC de densidad automática', 'DOS-PLC-001', 2, 4);
+INSERT INTO componente (nombre, numero_parte, equipo_id, criticidad_id) VALUES ('Rodillo superior de perfilado D80mm', 'ROD-SUP-001', 3, 3);
+INSERT INTO componente (nombre, numero_parte, equipo_id, criticidad_id) VALUES ('Rodillo inferior de perfilado D80mm', 'ROD-INF-001', 3, 3);
+INSERT INTO componente (nombre, numero_parte, equipo_id, criticidad_id) VALUES ('Rodamiento de bolas SKF 6309', 'ROD-BRG-001', 3, 2);
+INSERT INTO componente (nombre, numero_parte, equipo_id, criticidad_id) VALUES ('Motor reductor Siemens 11kW', 'ROD-MOT-001', 3, 3);
+INSERT INTO componente (nombre, numero_parte, equipo_id, criticidad_id) VALUES ('Prensa de rodillos temperatura controlada', 'PRL-ROLL-001', 4, 4);
+INSERT INTO componente (nombre, numero_parte, equipo_id, criticidad_id) VALUES ('Cilindro hidráulico de presión 250bar', 'PRL-HYD-001', 4, 4);
+INSERT INTO componente (nombre, numero_parte, equipo_id, criticidad_id) VALUES ('Bomba hidráulica Rexroth A4VSO180', 'PRL-PUMP-001', 4, 4);
+INSERT INTO componente (nombre, numero_parte, equipo_id, criticidad_id) VALUES ('Válvula de alivio de presión 250bar', 'PRL-VALV-001', 4, 3);
+INSERT INTO componente (nombre, numero_parte, equipo_id, criticidad_id) VALUES ('Disco de corte carburo tungsteno 2500mm', 'SIE-DISC-001', 5, 3);
+INSERT INTO componente (nombre, numero_parte, equipo_id, criticidad_id) VALUES ('Motor asincrónico 30kW 1500rpm', 'SIE-MOT-001', 5, 3);
+INSERT INTO componente (nombre, numero_parte, equipo_id, criticidad_id) VALUES ('Guía de alineación láser automática', 'SIE-GUA-001', 5, 3);
+INSERT INTO componente (nombre, numero_parte, equipo_id, criticidad_id) VALUES ('Sensor de posición para corte de longitud', 'SIE-SENS-001', 5, 2);
+INSERT INTO componente (nombre, numero_parte, equipo_id, criticidad_id) VALUES ('Matriz superior de alabardilla', 'DOB-MAT-001', 6, 2);
+INSERT INTO componente (nombre, numero_parte, equipo_id, criticidad_id) VALUES ('Matriz inferior de cumbrera', 'DOB-MAT-002', 6, 2);
+INSERT INTO componente (nombre, numero_parte, equipo_id, criticidad_id) VALUES ('Cilindro neumático doble efecto', 'DOB-CYL-001', 6, 2);
+INSERT INTO componente (nombre, numero_parte, equipo_id, criticidad_id) VALUES ('Válvula solenoide 24VDC', 'DOB-SOL-001', 6, 2);
+INSERT INTO componente (nombre, numero_parte, equipo_id, criticidad_id) VALUES ('Hoja de corte bimetálica 200mm', 'CAL-HJA-001', 7, 1);
+INSERT INTO componente (nombre, numero_parte, equipo_id, criticidad_id) VALUES ('Motor eléctrico 1.5kW', 'CAL-MOT-001', 7, 2);
+INSERT INTO componente (nombre, numero_parte, equipo_id, criticidad_id) VALUES ('Placa base de apoyo inclinable', 'CAL-PLA-001', 7, 1);
+INSERT INTO componente (nombre, numero_parte, equipo_id, criticidad_id) VALUES ('Horquilla de carga 1200x150mm', 'MCG-HOR-001', 8, 2);
+INSERT INTO componente (nombre, numero_parte, equipo_id, criticidad_id) VALUES ('Motor diesel Toyota 4D-FG', 'MCG-MOT-001', 8, 2);
+INSERT INTO componente (nombre, numero_parte, equipo_id, criticidad_id) VALUES ('Batería 48V 625Ah', 'MCG-BAT-001', 8, 2);
+INSERT INTO componente (nombre, numero_parte, equipo_id, criticidad_id) VALUES ('Cilindro de elevación hidráulico', 'MCG-CYL-001', 8, 2);
+INSERT INTO componente (nombre, numero_parte, equipo_id, criticidad_id) VALUES ('Evaporador enfriador -70°C', 'REF-EV-001', 9, 4);
+INSERT INTO componente (nombre, numero_parte, equipo_id, criticidad_id) VALUES ('Compresor de tornillo Bitzer 10hp', 'REF-COMP-001', 9, 4);
+INSERT INTO componente (nombre, numero_parte, equipo_id, criticidad_id) VALUES ('Ventilador axial de serpentín', 'REF-FAN-001', 9, 3);
+INSERT INTO componente (nombre, numero_parte, equipo_id, criticidad_id) VALUES ('Válvula de expansión termostática', 'REF-EXP-001', 9, 3);
+INSERT INTO componente (nombre, numero_parte, equipo_id, criticidad_id) VALUES ('Molde de extrusión perfil U 100mm', 'EXT-MOLD-001', 10, 3);
+INSERT INTO componente (nombre, numero_parte, equipo_id, criticidad_id) VALUES ('Tornillo extrusor D65mm L2000mm', 'EXT-SCR-001', 10, 3);
+INSERT INTO componente (nombre, numero_parte, equipo_id, criticidad_id) VALUES ('Calentador de cilindro 9kW', 'EXT-HTR-001', 10, 2);
+INSERT INTO componente (nombre, numero_parte, equipo_id, criticidad_id) VALUES ('Motor reductor Siemens 22kW', 'EXT-MOT-001', 10, 3);

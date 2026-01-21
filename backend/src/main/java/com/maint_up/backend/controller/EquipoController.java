@@ -5,13 +5,13 @@ import com.maint_up.backend.service.EquipoService;
 import com.maint_up.backend.dto.EquipoDTO;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.lang.NonNull;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/equipos")
-@CrossOrigin(origins = "http://localhost:5173")
 public class EquipoController {
 
     private final EquipoService equipoService;
@@ -28,13 +28,13 @@ public class EquipoController {
 
     // GET - equipo por ID
     @GetMapping("/{id}")
-    public ResponseEntity<Equipo> obtener(@PathVariable Long id) {
+    public ResponseEntity<Equipo> obtener(@PathVariable @NonNull Long id) {
         return ResponseEntity.ok(equipoService.obtenerPorId(id));
     }
 
     // POST - crear equipo
     @PostMapping
-    public ResponseEntity<?> crear(@RequestBody EquipoDTO equipoDTO) {
+    public ResponseEntity<?> crear(@RequestBody @NonNull EquipoDTO equipoDTO) {
         try {
             Equipo nuevoEquipo = equipoService.crearEquipo(equipoDTO);
             return ResponseEntity.status(HttpStatus.CREATED).body(nuevoEquipo);
@@ -45,7 +45,7 @@ public class EquipoController {
 
     // PUT - actualizar equipo
     @PutMapping("/{id}")
-    public ResponseEntity<?> actualizar(@PathVariable Long id, @RequestBody EquipoDTO equipoDTO) {
+    public ResponseEntity<?> actualizar(@PathVariable @NonNull Long id, @RequestBody @NonNull EquipoDTO equipoDTO) {
         try {
             Equipo actualizado = equipoService.actualizarEquipo(id, equipoDTO);
             return ResponseEntity.ok(actualizado);
@@ -56,7 +56,7 @@ public class EquipoController {
 
     // DELETE - eliminar equipo
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> eliminar(@PathVariable Long id) {
+    public ResponseEntity<Void> eliminar(@PathVariable @NonNull Long id) {
         equipoService.eliminarEquipo(id);
         return ResponseEntity.noContent().build();
     }

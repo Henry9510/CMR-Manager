@@ -2,13 +2,13 @@ package com.maint_up.backend.controller;
 
 import com.maint_up.backend.model.Criticidad;
 import com.maint_up.backend.repository.CriticidadRepository;
+import org.springframework.lang.NonNull;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/criticidades")
-@CrossOrigin(origins = "http://localhost:5173")
 public class CriticidadController {
 
     private final CriticidadRepository criticidadRepository;
@@ -23,13 +23,13 @@ public class CriticidadController {
     }
 
     @GetMapping("/{id}")
-    public Criticidad obtenerPorId(@PathVariable Long id) {
+    public Criticidad obtenerPorId(@PathVariable @NonNull Long id) {
         return criticidadRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Criticidad no encontrada"));
     }
 
     @PostMapping
-    public Criticidad crear(@RequestBody Criticidad criticidad) {
+    public Criticidad crear(@RequestBody @NonNull Criticidad criticidad) {
         if (criticidad.getNivel() == null || criticidad.getNivel().isEmpty()) {
             throw new IllegalArgumentException("El nivel es requerido");
         }
@@ -37,7 +37,7 @@ public class CriticidadController {
     }
 
     @PutMapping("/{id}")
-    public Criticidad actualizar(@PathVariable Long id, @RequestBody Criticidad criticidad) {
+    public Criticidad actualizar(@PathVariable @NonNull Long id, @RequestBody @NonNull Criticidad criticidad) {
         Criticidad existente = criticidadRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Criticidad no encontrada"));
         
@@ -49,7 +49,7 @@ public class CriticidadController {
     }
 
     @DeleteMapping("/{id}")
-    public void eliminar(@PathVariable Long id) {
+    public void eliminar(@PathVariable @NonNull Long id) {
         criticidadRepository.deleteById(id);
     }
 }

@@ -64,12 +64,12 @@ export default function App() {
         } bg-gradient-to-b from-blue-900 to-blue-800 text-white transition-all duration-300 overflow-hidden flex flex-col`}
       >
         {/* Header */}
-        <div className="p-6 border-b border-blue-700">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-xl font-bold">EASY MAINT</h1>
-              <p className="text-xs text-blue-200">Sistema CMMS v1.0</p>
-            </div>
+        <div className="p-8 border-b-2 border-blue-600 bg-gradient-to-r from-blue-950 via-blue-900 to-blue-800 shadow-2xl">
+          <div className="flex flex-col items-center justify-center gap-2 text-center">
+            <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 via-blue-200 to-cyan-300 drop-shadow-2xl tracking-widest animate-pulse">
+              MaintUp
+            </h1>
+            <p className="text-sm text-blue-100 font-semibold uppercase letter-spacing">Sistema CMMS v1.0</p>
           </div>
         </div>
 
