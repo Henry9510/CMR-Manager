@@ -39,6 +39,9 @@ public class Equipo {
     @JsonManagedReference
     private Criticidad criticidad;
 
+    private Float horasTrabajo = 0f; // Horas de trabajo acumuladas
+    private Float horasMantenimiento = 500f; // Horas para hacer mantenimiento
+
     @OneToMany(mappedBy = "equipo", fetch = FetchType.EAGER, cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference
     private List<Componente> componentes; // Piezas que pueden fallar

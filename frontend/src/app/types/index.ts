@@ -5,7 +5,7 @@ export type WorkOrderType = 'Correctivo' | 'Preventivo' | 'Predictivo' | 'Emerge
 export type WorkOrderStatus = 'Creada' | 'Planificada' | 'En Ejecución' | 'Cerrada';
 
 export interface Equipment {
-  tipo_id: any;
+  tipo_id?: any;
   id: string;
   name: string;
   code: string;
@@ -18,6 +18,9 @@ export interface Equipment {
   serialNumber?: string;
   installDate?: string;
   components?: Component[];
+  // Horas de operación
+  horasTrabajo?: number;
+  horasMantenimiento?: number;
   // IDs para edición
   tipoId?: number | null;
   ubicacionId?: number | null;
@@ -36,6 +39,19 @@ export interface Component {
   manufacturer?: string;
   serialNumber?: string;
   criticality: CriticalityLevel;
+  // Propiedades actuales del componente
+  nombre?: string;
+  numeroParte?: string;
+  vecesReparado?: number;
+  vecesCambiado?: number;
+  vecesFallado?: number;
+  horasTrabajo?: number;
+  horasMantenimiento?: number;
+  estado?: {
+    id: number;
+    nombre: string;
+    descripcion: string;
+  };
 }
 
 export interface WorkOrder {

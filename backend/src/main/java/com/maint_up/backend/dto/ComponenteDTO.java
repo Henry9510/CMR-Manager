@@ -5,5 +5,5 @@ public class ComponenteDTO {
     public String numeroParte;
     public String descripcion;
     public Long equipoId;
-    public Long criticidadId;
+    public Long estadoComponenteId;
 }

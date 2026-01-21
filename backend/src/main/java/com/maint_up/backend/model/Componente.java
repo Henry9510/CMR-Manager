@@ -33,7 +33,14 @@ public class Componente {
     private Equipo equipo;
 
     @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "criticidad_id")
+    @JoinColumn(name = "estado_componente_id")
     @JsonManagedReference
-    private Criticidad criticidad;
+    private EstadoComponente estado;
+
+    private Float horasTrabajo = 0f; // Horas de trabajo acumuladas del componente
+    private Float horasMantenimiento = 300f; // Horas para hacer mantenimiento del componente
+    
+    private Integer vecesReparado = 0; // Número de veces que ha sido reparado
+    private Integer vecesCambiado = 0; // Número de veces que ha sido reemplazado/cambiado
+    private Integer vecesFallado = 0; // Número de veces que ha fallado
 }

@@ -8,7 +8,7 @@ import com.maint_up.backend.repository.EquipoRepository;
 
 import jakarta.transaction.Transactional;
 
-import com.maint_up.backend.repository.CriticidadRepository;
+import com.maint_up.backend.repository.EstadoComponenteRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.lang.NonNull;
@@ -23,14 +23,14 @@ public class ComponenteService {
 
     private final ComponenteRepository componenteRepository;
     private final EquipoRepository equipoRepository;
-    private final CriticidadRepository criticidadRepository;
+    private final EstadoComponenteRepository estadoComponenteRepository;
 
     public ComponenteService(ComponenteRepository componenteRepository,
             EquipoRepository equipoRepository,
-            CriticidadRepository criticidadRepository) {
+            EstadoComponenteRepository estadoComponenteRepository) {
         this.componenteRepository = componenteRepository;
         this.equipoRepository = equipoRepository;
-        this.criticidadRepository = criticidadRepository;
+        this.estadoComponenteRepository = estadoComponenteRepository;
     }
 
     public List<Componente> obtenerTodos() {
@@ -90,6 +90,7 @@ public class ComponenteService {
             componente.setEquipo(null);
         }
 
+        componenteRepository.deleteById(id);
         logger.info("Componente eliminado correctamente: id={}", id);
     }
 
@@ -98,8 +99,8 @@ public class ComponenteService {
         componente.setNumeroParte(dto.numeroParte);
         componente.setDescripcion(dto.descripcion);
 
-        if (dto.criticidadId != null) {
-            componente.setCriticidad(criticidadRepository.findById(dto.criticidadId).orElse(null));
+        if (dto.estadoComponenteId != null) {
+            componente.setEstado(estadoComponenteRepository.findById(dto.estadoComponenteId).orElse(null));
         }
 
         if (dto.equipoId != null) {

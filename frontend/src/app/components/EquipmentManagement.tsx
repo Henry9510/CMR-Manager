@@ -66,14 +66,14 @@ export function EquipmentManagement() {
     nombre: '',
     numeroParte: '',
     descripcion: '',
-    criticidadId: '',
+    estadoComponenteId: '',
   });
 
   const [editComponentForm, setEditComponentForm] = useState({
     nombre: '',
     numeroParte: '',
     descripcion: '',
-    criticidadId: '',
+    estadoComponenteId: '',
   });
 
   // Catálogos
@@ -81,6 +81,19 @@ export function EquipmentManagement() {
   const [ubicaciones, setUbicaciones] = useState<any[]>([]);
   const [estados, setEstados] = useState<any[]>([]);
   const [criticidades, setCriticidades] = useState<any[]>([]);
+  const [estadosComponente, setEstadosComponente] = useState<any[]>([]);
+
+  // Modal para generar OT
+  const [showGenerarOTModal, setShowGenerarOTModal] = useState(false);
+  const [otFormData, setOtFormData] = useState({
+    titulo: '',
+    descripcion: '',
+    observaciones: '',
+    asignadoA: '',
+    horasEstimadas: 0,
+    fechaProgramada: '',
+    prioridad: 'MEDIA',
+  });
 
   // Estados únicos para filtro
   const statuses = ['Todos', ...new Set(equipments.map(eq => eq.status))];
@@ -93,17 +106,19 @@ export function EquipmentManagement() {
      ======================= */
   const loadCatalogData = async () => {
     try {
-      const [tiposRes, ubicacionesRes, estadosRes, criticidadesRes] = await Promise.all([
+      const [tiposRes, ubicacionesRes, estadosRes, criticidadesRes, estadosCompRes] = await Promise.all([
         fetch('http://localhost:8080/api/tipos-equipo'),
         fetch('http://localhost:8080/api/ubicaciones'),
         fetch('http://localhost:8080/api/estados'),
         fetch('http://localhost:8080/api/criticidades'),
+        fetch('http://localhost:8080/api/estado-componente'),
       ]);
 
       if (tiposRes.ok) setTiposEquipo(await tiposRes.json());
       if (ubicacionesRes.ok) setUbicaciones(await ubicacionesRes.json());
       if (estadosRes.ok) setEstados(await estadosRes.json());
       if (criticidadesRes.ok) setCriticidades(await criticidadesRes.json());
+      if (estadosCompRes.ok) setEstadosComponente(await estadosCompRes.json());
     } catch (err) {
       console.error('Error cargando catálogos:', err);
     }
@@ -137,6 +152,8 @@ export function EquipmentManagement() {
         ubicacionId: eq.ubicacion?.id,
         estadoId: eq.estado?.id,
         criticidadId: eq.criticidad?.id,
+        horasTrabajo: eq.horasTrabajo ?? 0,
+        horasMantenimiento: eq.horasMantenimiento ?? 500,
         components: eq.componentes || [],
       }));
 
@@ -268,14 +285,14 @@ export function EquipmentManagement() {
           numeroParte: componentForm.numeroParte,
           descripcion: componentForm.descripcion,
           equipoId: Number(selectedEquipment.id),
-          criticidadId: toNumber(componentForm.criticidadId),
+          estadoComponenteId: toNumber(componentForm.estadoComponenteId),
         }),
       });
 
       if (response.ok) {
         loadEquipments(true, selectedEquipment?.id);
         setShowComponentModal(false);
-        setComponentForm({ nombre: '', numeroParte: '', descripcion: '', criticidadId: '' });
+        setComponentForm({ nombre: '', numeroParte: '', descripcion: '', estadoComponenteId: '' });
         toast.success('Componente creado exitosamente');
       } else {
         toast.error(`Error al crear componente: ${await response.text()}`);
@@ -300,7 +317,7 @@ export function EquipmentManagement() {
           numeroParte: editComponentForm.numeroParte,
           descripcion: editComponentForm.descripcion,
           equipoId: Number(selectedEquipment?.id),
-          criticidadId: toNumber(editComponentForm.criticidadId),
+          estadoComponenteId: toNumber(editComponentForm.estadoComponenteId),
         }),
       });
 
@@ -347,10 +364,108 @@ export function EquipmentManagement() {
       nombre: comp.nombre || '',
       numeroParte: comp.numeroParte || '',
       descripcion: comp.descripcion || '',
-      criticidadId: comp.criticidad?.id ? String(comp.criticidad.id) : '',
+      estadoComponenteId: comp.estado?.id ? String(comp.estado.id) : '',
     });
     setShowEditComponentModal(true);
-  };;
+  };
+
+  // Verificar si hay componentes no óptimos
+  const hasNonOptimalComponents = (equipment: Equipment) => {
+    if (!equipment.components) return false;
+    return equipment.components.some((comp: any) => {
+      const estadoNombre = comp.estado?.nombre;
+      return estadoNombre && estadoNombre !== 'Óptimo';
+    });
+  };
+
+  // Obtener descripción de estado
+  const getEstadoDescripcion = (estadoNombre: string, comp: any): string => {
+    switch (estadoNombre) {
+      case 'Falla':
+        return `🔴 CRÍTICO: ${comp.nombre} ha presentado una falla completa y requiere intervención inmediata para restaurar la operación del equipo.`;
+      case 'En Reparación':
+        return `🟠 EN PROCESO: ${comp.nombre} se encuentra actualmente siendo reparado. Las reparaciones se están ejecutando según lo planificado.`;
+      case 'Esperando Repuesto':
+        return `🟡 ESPERA: ${comp.nombre} está esperando la llegada del repuesto. Se necesita expeditar la entrega para minimizar tiempos de parada.`;
+      case 'Funcional':
+        return `🟢 OPERATIVO: ${comp.nombre} está operando pero mostrando signos de desgaste. Se recomienda monitoreo regular.`;
+      default:
+        return `${comp.nombre} - Estado: ${estadoNombre}`;
+    }
+  };
+
+  // Abrir modal para generar OT
+  const handleOpenGenerarOT = () => {
+    if (!selectedEquipment) return;
+
+    const componentesNoOptimos = selectedEquipment.components?.filter((comp: any) => 
+      comp.estado?.nombre && comp.estado.nombre !== 'Óptimo'
+    ) || [];
+
+    const hasFailureOrRepair = componentesNoOptimos.some((comp: any) => 
+      comp.estado?.nombre === 'Falla' || comp.estado?.nombre === 'En Reparación'
+    );
+
+    const prioridad = hasFailureOrRepair ? 'ALTA' : 'MEDIA';
+    const timestamp = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+    const hora = new Date().toISOString().slice(11, 16).replace(':', '');
+    const codigo = `OT-${selectedEquipment.code}-${timestamp}-${hora}`;
+
+    // Construir descripción desde componentes
+    let descripcion = `Mantenimiento Correctivo - Reparación de componentes defectuosos del equipo ${selectedEquipment.name}\n\n`;
+    componentesNoOptimos.forEach((comp: any, idx: number) => {
+      descripcion += `${idx + 1}. ${getEstadoDescripcion(comp.estado.nombre, comp)}\n`;
+      descripcion += `   Código del componente: ${comp.numeroParte}\n`;
+      descripcion += `   Reparados: ${comp.vecesReparado || 0} | Cambiados: ${comp.vecesCambiado || 0} | Fallados: ${comp.vecesFallado || 0}\n\n`;
+    });
+
+    setOtFormData({
+      titulo: `Mantenimiento Correctivo - ${selectedEquipment.name}`,
+      descripcion: descripcion,
+      observaciones: `Equipo: ${selectedEquipment.name}\nUbicación: ${selectedEquipment.location}\nHoras acumuladas: ${selectedEquipment.horasTrabajo}h`,
+      asignadoA: '',
+      horasEstimadas: componentesNoOptimos.length * 2,
+      fechaProgramada: new Date().toISOString().split('T')[0],
+      prioridad: prioridad,
+    });
+
+    setShowGenerarOTModal(true);
+  };
+
+  // Crear OT
+  const handleCreateOT = async () => {
+    if (!selectedEquipment) {
+      toast.error('Selecciona un equipo primero');
+      return;
+    }
+
+    try {
+      const response = await fetch('http://localhost:8080/api/ordenes-trabajo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          titulo: otFormData.titulo,
+          descripcion: otFormData.descripcion,
+          observaciones: otFormData.observaciones,
+          equipoId: Number(selectedEquipment.id),
+          estadoId: 1, // Creada
+          prioridad: otFormData.prioridad,
+          horasEstimadas: otFormData.horasEstimadas,
+          fechaProgramada: otFormData.fechaProgramada,
+        }),
+      });
+
+      if (response.ok) {
+        toast.success('Orden de trabajo creada exitosamente');
+        setShowGenerarOTModal(false);
+        // Optionalmente redirigir a órdenes de trabajo
+      } else {
+        toast.error(`Error al crear OT: ${await response.text()}`);
+      }
+    } catch (err) {
+      toast.error(`Error: ${err}`);
+    }
+  };
   const filteredEquipment = equipments.filter(eq => {
     const matchesSearch = 
       eq.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -530,12 +645,50 @@ export function EquipmentManagement() {
                 </div>
               </div>
 
+              {/* Horas de Trabajo del Equipo */}
+              <div className="border-t pt-4">
+                <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                  <label className="text-xs font-semibold text-blue-900 uppercase">Horas de Trabajo Acumuladas</label>
+                  <div className="flex items-center justify-between mt-2">
+                    <div>
+                      <p className="text-2xl font-bold text-blue-600">
+                        {selectedEquipment.horasTrabajo ? selectedEquipment.horasTrabajo.toFixed(2) : '0.00'}h
+                      </p>
+                      <p className="text-xs text-blue-700 mt-1">
+                        Próximo mantenimiento en: {selectedEquipment.horasMantenimiento ? selectedEquipment.horasMantenimiento.toFixed(0) : 'N/A'}h
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-medium text-blue-800">
+                        {selectedEquipment.horasTrabajo && selectedEquipment.horasMantenimiento 
+                          ? ((selectedEquipment.horasTrabajo / selectedEquipment.horasMantenimiento) * 100).toFixed(1)
+                          : '0'}% 
+                      </p>
+                      <p className="text-xs text-blue-700">del ciclo</p>
+                    </div>
+                  </div>
+                  <div className="mt-3 h-2 bg-blue-200 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-blue-600 transition-all"
+                      style={{
+                        width: `${Math.min(
+                          selectedEquipment.horasTrabajo && selectedEquipment.horasMantenimiento
+                            ? (selectedEquipment.horasTrabajo / selectedEquipment.horasMantenimiento) * 100
+                            : 0,
+                          100
+                        )}%`
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+
               <div className="border-t pt-6">
                 <p className="text-sm font-medium mb-3">Componentes</p>
                 {selectedEquipment.components && selectedEquipment.components.length > 0 ? (
                   <div className="space-y-2">
                     {selectedEquipment.components.map((comp: any, idx: number) => (
-                      <div key={idx} className="p-3 bg-gray-50 border rounded-lg">
+                      <div key={idx} className="p-4 bg-gray-50 border rounded-lg hover:bg-gray-100 transition">
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
                             <p className="font-medium text-sm">{comp.nombre}</p>
@@ -543,11 +696,42 @@ export function EquipmentManagement() {
                             {comp.descripcion && (
                               <p className="text-xs text-gray-600 mt-1">{comp.descripcion}</p>
                             )}
+                            
+                            {/* Métricas del Componente */}
+                            <div className="mt-3 grid grid-cols-4 gap-2 text-xs">
+                              <div className="bg-white p-2 rounded border border-gray-200">
+                                <p className="text-gray-500 font-semibold">REPARADO</p>
+                                <p className="text-lg font-bold text-orange-600">{comp.vecesReparado || 0}</p>
+                                <p className="text-gray-400">veces</p>
+                              </div>
+                              <div className="bg-white p-2 rounded border border-gray-200">
+                                <p className="text-gray-500 font-semibold">CAMBIADO</p>
+                                <p className="text-lg font-bold text-blue-600">{comp.vecesCambiado || 0}</p>
+                                <p className="text-gray-400">veces</p>
+                              </div>
+                              <div className="bg-white p-2 rounded border border-gray-200">
+                                <p className="text-gray-500 font-semibold">FALLADO</p>
+                                <p className="text-lg font-bold text-red-600">{comp.vecesFallado || 0}</p>
+                                <p className="text-gray-400">veces</p>
+                              </div>
+                              <div className="bg-white p-2 rounded border border-gray-200">
+                                <p className="text-gray-500 font-semibold">ESTADO</p>
+                                <Badge 
+                                  variant="outline" 
+                                  className={`mt-1 ${
+                                    comp.estado?.nombre === 'Falla' ? 'bg-red-100 text-red-800' :
+                                    comp.estado?.nombre === 'En Reparación' ? 'bg-orange-100 text-orange-800' :
+                                    comp.estado?.nombre === 'Esperando Repuesto' ? 'bg-yellow-100 text-yellow-800' :
+                                    comp.estado?.nombre === 'Funcional' ? 'bg-blue-100 text-blue-800' :
+                                    'bg-green-100 text-green-800'
+                                  }`}
+                                >
+                                  {comp.estado?.nombre || 'N/A'}
+                                </Badge>
+                              </div>
+                            </div>
                           </div>
                           <div className="flex items-center gap-2 ml-2">
-                            <Badge variant="outline">
-                              {comp.criticidad?.nivel || 'N/A'}
-                            </Badge>
                             <button
                               title="Editar"
                               className="p-1 hover:bg-blue-100 rounded"
@@ -578,6 +762,15 @@ export function EquipmentManagement() {
               <div className="border-t pt-6">
                 <p className="text-sm font-medium mb-3">Acciones</p>
                 <div className="flex flex-wrap gap-2">
+                  {hasNonOptimalComponents(selectedEquipment) && (
+                    <Button 
+                      onClick={handleOpenGenerarOT} 
+                      className="flex-1 bg-red-600 hover:bg-red-700"
+                    >
+                      <AlertCircle className="h-4 w-4 mr-2" />
+                      Generar OT
+                    </Button>
+                  )}
                   <Button onClick={() => setShowComponentModal(true)} className="flex-1">
                     Agregar Componente
                   </Button>
@@ -829,15 +1022,15 @@ export function EquipmentManagement() {
               />
             </div>
             <div>
-              <label className="text-sm font-medium">Criticidad</label>
+              <label className="text-sm font-medium">Estado del Componente</label>
               <select
                 className="w-full p-2 border rounded bg-white"
-                value={componentForm.criticidadId || ''}
-                onChange={e => setComponentForm({...componentForm, criticidadId: e.target.value})}
+                value={componentForm.estadoComponenteId || ''}
+                onChange={e => setComponentForm({...componentForm, estadoComponenteId: e.target.value})}
               >
-                <option value="">Selecciona una criticidad</option>
-                {criticidades.map(c => (
-                  <option key={c.id} value={c.id}>{c.nivel}</option>
+                <option value="">Selecciona un estado</option>
+                {estadosComponente.map(ec => (
+                  <option key={ec.id} value={ec.id}>{ec.nombre}</option>
                 ))}
               </select>
             </div>
@@ -845,7 +1038,7 @@ export function EquipmentManagement() {
           <DialogFooter>
             <Button variant="outline" onClick={() => {
               setShowComponentModal(false);
-              setComponentForm({ nombre: '', numeroParte: '', descripcion: '', criticidadId: '' });
+              setComponentForm({ nombre: '', numeroParte: '', descripcion: '', estadoComponenteId: '' });
             }}>
               Cancelar
             </Button>
@@ -891,15 +1084,15 @@ export function EquipmentManagement() {
               />
             </div>
             <div>
-              <label className="text-sm font-medium">Criticidad</label>
+              <label className="text-sm font-medium">Estado del Componente</label>
               <select
                 className="w-full p-2 border rounded bg-white"
-                value={editComponentForm.criticidadId || ''}
-                onChange={e => setEditComponentForm({ ...editComponentForm, criticidadId: e.target.value })}
+                value={editComponentForm.estadoComponenteId || ''}
+                onChange={e => setEditComponentForm({ ...editComponentForm, estadoComponenteId: e.target.value })}
               >
-                <option value="">Selecciona una criticidad</option>
-                {criticidades.map(c => (
-                  <option key={c.id} value={c.id}>{c.nivel}</option>
+                <option value="">Selecciona un estado</option>
+                {estadosComponente.map(ec => (
+                  <option key={ec.id} value={ec.id}>{ec.nombre}</option>
                 ))}
               </select>
             </div>
@@ -910,6 +1103,97 @@ export function EquipmentManagement() {
             </Button>
             <Button onClick={handleEditComponent} className="bg-blue-600 hover:bg-blue-700">
               Guardar Cambios
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* MODAL GENERAR ORDEN DE TRABAJO */}
+      <Dialog open={showGenerarOTModal} onOpenChange={setShowGenerarOTModal}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Generar Orden de Trabajo</DialogTitle>
+            <DialogDescription>
+              Crea una nueva orden de trabajo con los detalles pre-rellenados
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium">Título</label>
+              <Input
+                placeholder="Título de la OT"
+                value={otFormData.titulo}
+                onChange={e => setOtFormData({...otFormData, titulo: e.target.value})}
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Descripción</label>
+              <textarea
+                className="w-full p-2 border rounded text-xs font-mono"
+                rows={6}
+                placeholder="Descripción de la OT"
+                value={otFormData.descripcion}
+                onChange={e => setOtFormData({...otFormData, descripcion: e.target.value})}
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Observaciones</label>
+              <textarea
+                className="w-full p-2 border rounded"
+                rows={3}
+                placeholder="Observaciones adicionales"
+                value={otFormData.observaciones}
+                onChange={e => setOtFormData({...otFormData, observaciones: e.target.value})}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium">Prioridad</label>
+                <select
+                  className="w-full p-2 border rounded bg-white"
+                  value={otFormData.prioridad}
+                  onChange={e => setOtFormData({...otFormData, prioridad: e.target.value})}
+                >
+                  <option value="BAJA">Baja</option>
+                  <option value="MEDIA">Media</option>
+                  <option value="ALTA">Alta</option>
+                  <option value="CRÍTICA">Crítica</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-sm font-medium">Horas Estimadas</label>
+                <Input
+                  type="number"
+                  value={otFormData.horasEstimadas}
+                  onChange={e => setOtFormData({...otFormData, horasEstimadas: Number(e.target.value)})}
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium">Asignado A</label>
+                <Input
+                  placeholder="Nombre del técnico"
+                  value={otFormData.asignadoA}
+                  onChange={e => setOtFormData({...otFormData, asignadoA: e.target.value})}
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Fecha Programada</label>
+                <Input
+                  type="date"
+                  value={otFormData.fechaProgramada}
+                  onChange={e => setOtFormData({...otFormData, fechaProgramada: e.target.value})}
+                />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowGenerarOTModal(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleCreateOT} className="bg-red-600 hover:bg-red-700">
+              Crear Orden de Trabajo
             </Button>
           </DialogFooter>
         </DialogContent>
