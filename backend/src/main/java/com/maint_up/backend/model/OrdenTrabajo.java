@@ -20,14 +20,12 @@ public class OrdenTrabajo {
     private String codigo; // Código único de la OT
     private String titulo; // Título de la orden
     private String descripcion; // Descripción detallada
+    private String tipo; // Preventivo, Correctivo, Predictivo, Emergencia
+    private String asignadoA; // Persona asignada
     
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "equipo_id")
     private Equipo equipo;
-
-    @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "tipo_id")
-    private TipoEquipo tipo; // Preventivo, Correctivo, etc.
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "estado_id")

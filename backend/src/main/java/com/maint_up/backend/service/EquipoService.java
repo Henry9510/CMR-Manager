@@ -3,7 +3,6 @@ package com.maint_up.backend.service;
 import com.maint_up.backend.model.Equipo;
 import com.maint_up.backend.dto.EquipoDTO;
 import com.maint_up.backend.repository.EquipoRepository;
-import com.maint_up.backend.repository.TipoEquipoRepository;
 import com.maint_up.backend.repository.UbicacionRepository;
 import com.maint_up.backend.repository.EstadoEquipoRepository;
 import com.maint_up.backend.repository.CriticidadRepository;
@@ -20,18 +19,15 @@ public class EquipoService {
     private static final Logger logger = LoggerFactory.getLogger(EquipoService.class);
 
     private final EquipoRepository equipoRepository;
-    private final TipoEquipoRepository tipoEquipoRepository;
     private final UbicacionRepository ubicacionRepository;
     private final EstadoEquipoRepository estadoEquipoRepository;
     private final CriticidadRepository criticidadRepository;
 
     public EquipoService(EquipoRepository equipoRepository,
-                        TipoEquipoRepository tipoEquipoRepository,
                         UbicacionRepository ubicacionRepository,
                         EstadoEquipoRepository estadoEquipoRepository,
                         CriticidadRepository criticidadRepository) {
         this.equipoRepository = equipoRepository;
-        this.tipoEquipoRepository = tipoEquipoRepository;
         this.ubicacionRepository = ubicacionRepository;
         this.estadoEquipoRepository = estadoEquipoRepository;
         this.criticidadRepository = criticidadRepository;
@@ -82,8 +78,10 @@ public class EquipoService {
         equipo.setNombre(dto.nombre);
         equipo.setCodigo(dto.codigo);
         
-        if (dto.tipoId != null) {
-            equipo.setTipo(tipoEquipoRepository.findById(dto.tipoId).orElse(null));
+        if (dto.horasMantenimiento != null) {
+            equipo.setHorasMantenimiento(dto.horasMantenimiento);
+        } else {
+            equipo.setHorasMantenimiento(500f);
         }
         if (dto.ubicacionId != null) {
             equipo.setUbicacion(ubicacionRepository.findById(dto.ubicacionId).orElse(null));

@@ -20,9 +20,6 @@ public interface OrdenTrabajoRepository extends JpaRepository<OrdenTrabajo, Long
     // Buscar por estado
     List<OrdenTrabajo> findByEstadoId(Long estadoId);
     
-    // Buscar por tipo
-    List<OrdenTrabajo> findByTipoId(Long tipoId);
-    
     // Buscar por prioridad
     List<OrdenTrabajo> findByPrioridadId(Long prioridadId);
     

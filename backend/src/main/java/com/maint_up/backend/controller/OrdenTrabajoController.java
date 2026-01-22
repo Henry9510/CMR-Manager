@@ -2,13 +2,19 @@ package com.maint_up.backend.controller;
 
 import com.maint_up.backend.model.OrdenTrabajo;
 import com.maint_up.backend.model.EstadoEquipo;
+import com.maint_up.backend.model.Equipo;
+import com.maint_up.backend.model.Criticidad;
+import com.maint_up.backend.dto.OrdenTrabajoDTO;
 import com.maint_up.backend.repository.OrdenTrabajoRepository;
 import com.maint_up.backend.repository.EstadoEquipoRepository;
+import com.maint_up.backend.repository.EquipoRepository;
+import com.maint_up.backend.repository.CriticidadRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -22,6 +28,12 @@ public class OrdenTrabajoController {
 
     @Autowired
     private EstadoEquipoRepository estadoEquipoRepository;
+
+    @Autowired
+    private EquipoRepository equipoRepository;
+
+    @Autowired
+    private CriticidadRepository criticidadRepository;
 
     @GetMapping
     public ResponseEntity<List<OrdenTrabajo>> getAllOrdenes() {
@@ -45,20 +57,48 @@ public class OrdenTrabajoController {
     }
 
     @PostMapping
-    public ResponseEntity<OrdenTrabajo> createOrden(@RequestBody OrdenTrabajo orden) {
+    public ResponseEntity<OrdenTrabajo> createOrden(@RequestBody OrdenTrabajoDTO dto) {
         try {
-            // Si no tiene estado, asignamos "Creada"
-            if (orden.getEstado() == null) {
-                EstadoEquipo estadoCreada = estadoEquipoRepository.findAll().stream()
-                        .filter(e -> e.getNombre().equals("Creada"))
+            OrdenTrabajo orden = new OrdenTrabajo();
+            orden.setTitulo(dto.titulo);
+            orden.setDescripcion(dto.descripcion);
+            orden.setTipo(dto.tipo != null ? dto.tipo : "Correctivo");
+            orden.setAsignadoA(dto.asignadoA);
+            orden.setHorasEstimadas(dto.horasEstimadas);
+            
+            // Cargar equipo
+            if (dto.equipoId != null) {
+                Equipo equipo = equipoRepository.findById(dto.equipoId)
+                        .orElseThrow(() -> new RuntimeException("Equipo no encontrado"));
+                orden.setEquipo(equipo);
+            }
+            
+            // Cargar prioridad desde Criticidad
+            if (dto.prioridad != null) {
+                Criticidad prioridad = criticidadRepository.findAll().stream()
+                        .filter(c -> c.getNivel().equals(dto.prioridad))
                         .findFirst()
                         .orElse(null);
-                orden.setEstado(estadoCreada);
+                orden.setPrioridad(prioridad);
+            }
+            
+            // Establecer estado a "Creada"
+            EstadoEquipo estadoCreada = estadoEquipoRepository.findAll().stream()
+                    .filter(e -> e.getNombre().equals("Creada"))
+                    .findFirst()
+                    .orElse(null);
+            orden.setEstado(estadoCreada);
+            
+            // Parsear fecha programada
+            if (dto.fechaProgramada != null && !dto.fechaProgramada.isEmpty()) {
+                LocalDate date = LocalDate.parse(dto.fechaProgramada);
+                orden.setFechaProgramada(date.atStartOfDay());
             }
             
             OrdenTrabajo ordenGuardada = ordenTrabajoRepository.save(orden);
             return ResponseEntity.status(HttpStatus.CREATED).body(ordenGuardada);
         } catch (Exception e) {
+            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         }
     }
@@ -81,9 +121,6 @@ public class OrdenTrabajoController {
                 }
                 if (ordenDetails.getHorasEstimadas() != null) {
                     orden.setHorasEstimadas(ordenDetails.getHorasEstimadas());
-                }
-                if (ordenDetails.getTipo() != null) {
-                    orden.setTipo(ordenDetails.getTipo());
                 }
                 if (ordenDetails.getPrioridad() != null) {
                     orden.setPrioridad(ordenDetails.getPrioridad());

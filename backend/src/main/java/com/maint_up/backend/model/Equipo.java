@@ -25,11 +25,6 @@ public class Equipo {
     private Ubicacion ubicacion;
 
     @ManyToOne
-    @JoinColumn(name = "tipo_id")
-    @JsonManagedReference
-    private TipoEquipo tipo;
-
-    @ManyToOne
     @JoinColumn(name = "estado_id")
     @JsonManagedReference
     private EstadoEquipo estado;

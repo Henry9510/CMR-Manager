@@ -35,7 +35,6 @@ export interface Component {
   id: string;
   code: string;
   name: string;
-  description?: string;
   manufacturer?: string;
   serialNumber?: string;
   criticality: CriticalityLevel;

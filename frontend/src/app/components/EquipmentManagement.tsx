@@ -56,28 +56,25 @@ export function EquipmentManagement() {
   const [formData, setFormData] = useState({
     nombre: '',
     codigo: '',
-    tipoId: '',
     ubicacionId: '',
     estadoId: '',
     criticidadId: '',
+    horasMantenimiento: 500,
   });
 
   const [componentForm, setComponentForm] = useState({
     nombre: '',
     numeroParte: '',
-    descripcion: '',
     estadoComponenteId: '',
   });
 
   const [editComponentForm, setEditComponentForm] = useState({
     nombre: '',
     numeroParte: '',
-    descripcion: '',
     estadoComponenteId: '',
   });
 
   // Catálogos
-  const [tiposEquipo, setTiposEquipo] = useState<any[]>([]);
   const [ubicaciones, setUbicaciones] = useState<any[]>([]);
   const [estados, setEstados] = useState<any[]>([]);
   const [criticidades, setCriticidades] = useState<any[]>([]);
@@ -106,15 +103,13 @@ export function EquipmentManagement() {
      ======================= */
   const loadCatalogData = async () => {
     try {
-      const [tiposRes, ubicacionesRes, estadosRes, criticidadesRes, estadosCompRes] = await Promise.all([
-        fetch('http://localhost:8080/api/tipos-equipo'),
+      const [ubicacionesRes, estadosRes, criticidadesRes, estadosCompRes] = await Promise.all([
         fetch('http://localhost:8080/api/ubicaciones'),
         fetch('http://localhost:8080/api/estados'),
         fetch('http://localhost:8080/api/criticidades'),
         fetch('http://localhost:8080/api/estado-componente'),
       ]);
 
-      if (tiposRes.ok) setTiposEquipo(await tiposRes.json());
       if (ubicacionesRes.ok) setUbicaciones(await ubicacionesRes.json());
       if (estadosRes.ok) setEstados(await estadosRes.json());
       if (criticidadesRes.ok) setCriticidades(await criticidadesRes.json());
@@ -189,10 +184,10 @@ export function EquipmentManagement() {
         body: JSON.stringify({
           nombre: formData.nombre,
           codigo: formData.codigo,
-          tipoId: toNumber(formData.tipoId),
           ubicacionId: toNumber(formData.ubicacionId),
           estadoId: toNumber(formData.estadoId),
           criticidadId: toNumber(formData.criticidadId),
+          horasMantenimiento: formData.horasMantenimiento || 500,
         }),
       });
 
@@ -200,7 +195,7 @@ export function EquipmentManagement() {
         const responseData = await response.json();
         loadEquipments(true, responseData.id ? String(responseData.id) : undefined);
         setShowCreateModal(false);
-        setFormData({ nombre: '', codigo: '', tipoId: '', ubicacionId: '', estadoId: '', criticidadId: '' });
+        setFormData({ nombre: '', codigo: '', ubicacionId: '', estadoId: '', criticidadId: '', horasMantenimiento: 500 });
         toast.success('Equipo creado exitosamente');
       } else {
         toast.error(`Error al crear equipo: ${await response.text()}`);
@@ -223,10 +218,10 @@ export function EquipmentManagement() {
         body: JSON.stringify({
           nombre: editingEquipment.nombre,
           codigo: editingEquipment.codigo,
-          tipoId: toNumber(editingEquipment.tipoId),
           ubicacionId: toNumber(editingEquipment.ubicacionId),
           estadoId: toNumber(editingEquipment.estadoId),
           criticidadId: toNumber(editingEquipment.criticidadId),
+          horasMantenimiento: editingEquipment.horasMantenimiento || 500,
         }),
       });
 
@@ -283,7 +278,6 @@ export function EquipmentManagement() {
         body: JSON.stringify({
           nombre: componentForm.nombre,
           numeroParte: componentForm.numeroParte,
-          descripcion: componentForm.descripcion,
           equipoId: Number(selectedEquipment.id),
           estadoComponenteId: toNumber(componentForm.estadoComponenteId),
         }),
@@ -292,7 +286,7 @@ export function EquipmentManagement() {
       if (response.ok) {
         loadEquipments(true, selectedEquipment?.id);
         setShowComponentModal(false);
-        setComponentForm({ nombre: '', numeroParte: '', descripcion: '', estadoComponenteId: '' });
+        setComponentForm({ nombre: '', numeroParte: '', estadoComponenteId: '' });
         toast.success('Componente creado exitosamente');
       } else {
         toast.error(`Error al crear componente: ${await response.text()}`);
@@ -315,7 +309,6 @@ export function EquipmentManagement() {
         body: JSON.stringify({
           nombre: editComponentForm.nombre,
           numeroParte: editComponentForm.numeroParte,
-          descripcion: editComponentForm.descripcion,
           equipoId: Number(selectedEquipment?.id),
           estadoComponenteId: toNumber(editComponentForm.estadoComponenteId),
         }),
@@ -363,7 +356,6 @@ export function EquipmentManagement() {
     setEditComponentForm({
       nombre: comp.nombre || '',
       numeroParte: comp.numeroParte || '',
-      descripcion: comp.descripcion || '',
       estadoComponenteId: comp.estado?.id ? String(comp.estado.id) : '',
     });
     setShowEditComponentModal(true);
@@ -625,10 +617,6 @@ export function EquipmentManagement() {
             <CardContent className="space-y-6">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-xs text-gray-500 uppercase">Tipo</label>
-                  <p className="text-sm font-medium">{selectedEquipment.type}</p>
-                </div>
-                <div>
                   <label className="text-xs text-gray-500 uppercase">Ubicación</label>
                   <p className="text-sm font-medium">{selectedEquipment.location}</p>
                 </div>
@@ -693,9 +681,6 @@ export function EquipmentManagement() {
                           <div className="flex-1">
                             <p className="font-medium text-sm">{comp.nombre}</p>
                             <p className="text-xs text-gray-500">Código: {comp.numeroParte}</p>
-                            {comp.descripcion && (
-                              <p className="text-xs text-gray-600 mt-1">{comp.descripcion}</p>
-                            )}
                             
                             {/* Métricas del Componente */}
                             <div className="mt-3 grid grid-cols-4 gap-2 text-xs">
@@ -823,17 +808,13 @@ export function EquipmentManagement() {
               />
             </div>
             <div>
-              <label className="text-sm font-medium">Tipo de Equipo</label>
-              <select
-                className="w-full p-2 border rounded bg-white"
-                value={formData.tipoId || ''}
-                onChange={e => setFormData({...formData, tipoId: e.target.value})}
-              >
-                <option value="">Selecciona un tipo</option>
-                {tiposEquipo.map(t => (
-                  <option key={t.id} value={t.id}>{t.nombre}</option>
-                ))}
-              </select>
+              <label className="text-sm font-medium">Horas Mantenimiento</label>
+              <Input
+                type="number"
+                placeholder="Ej: 500"
+                value={formData.horasMantenimiento}
+                onChange={e => setFormData({...formData, horasMantenimiento: Number(e.target.value)})}
+              />
             </div>
             <div>
               <label className="text-sm font-medium">Ubicación</label>
@@ -878,7 +859,7 @@ export function EquipmentManagement() {
           <DialogFooter>
             <Button variant="outline" onClick={() => {
               setShowCreateModal(false);
-              setFormData({ nombre: '', codigo: '', tipoId: '', ubicacionId: '', estadoId: '', criticidadId: '' });
+              setFormData({ nombre: '', codigo: '', horasMantenimiento: 500, ubicacionId: '', estadoId: '', criticidadId: '' });
             }}>
               Cancelar
             </Button>
@@ -919,17 +900,13 @@ export function EquipmentManagement() {
                 />
               </div>
               <div>
-                <label className="text-sm font-medium">Tipo de Equipo</label>
-                <select
-                  className="w-full p-2 border rounded bg-white"
-                  value={editingEquipment.tipoId || editingEquipment.tipo?.id || ''}
-                  onChange={e => setEditingEquipment({...editingEquipment, tipoId: e.target.value ? parseInt(e.target.value) : null})}
-                >
-                  <option value="">Selecciona un tipo</option>
-                  {tiposEquipo.map(t => (
-                    <option key={t.id} value={t.id}>{t.nombre}</option>
-                  ))}
-                </select>
+                <label className="text-sm font-medium">Horas Mantenimiento</label>
+                <Input
+                  type="number"
+                  placeholder="Horas"
+                  value={editingEquipment.horasMantenimiento || 500}
+                  onChange={e => setEditingEquipment({...editingEquipment, horasMantenimiento: Number(e.target.value)})}
+                />
               </div>
               <div>
                 <label className="text-sm font-medium">Ubicación</label>
@@ -1014,14 +991,6 @@ export function EquipmentManagement() {
               />
             </div>
             <div>
-              <label className="text-sm font-medium">Descripción</label>
-              <Input
-                placeholder="Descripción del componente"
-                value={componentForm.descripcion}
-                onChange={e => setComponentForm({...componentForm, descripcion: e.target.value})}
-              />
-            </div>
-            <div>
               <label className="text-sm font-medium">Estado del Componente</label>
               <select
                 className="w-full p-2 border rounded bg-white"
@@ -1038,7 +1007,7 @@ export function EquipmentManagement() {
           <DialogFooter>
             <Button variant="outline" onClick={() => {
               setShowComponentModal(false);
-              setComponentForm({ nombre: '', numeroParte: '', descripcion: '', estadoComponenteId: '' });
+              setComponentForm({ nombre: '', numeroParte: '', estadoComponenteId: '' });
             }}>
               Cancelar
             </Button>
@@ -1073,14 +1042,6 @@ export function EquipmentManagement() {
                 placeholder="Número de parte"
                 value={editComponentForm.numeroParte}
                 onChange={e => setEditComponentForm({ ...editComponentForm, numeroParte: e.target.value })}
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium">Descripción</label>
-              <Input
-                placeholder="Descripción"
-                value={editComponentForm.descripcion}
-                onChange={e => setEditComponentForm({ ...editComponentForm, descripcion: e.target.value })}
               />
             </div>
             <div>

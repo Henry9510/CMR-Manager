@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
@@ -9,24 +9,113 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Label } from './ui/label';
 import { Textarea } from './ui/textarea';
 import { Search, Plus, Clock, AlertCircle, CheckCircle, PlayCircle, FileText } from 'lucide-react';
-import { mockWorkOrders } from '../data/mockData';
-import { WorkOrder, WorkOrderStatus, WorkOrderType } from '../types';
+import { toast } from 'sonner';
+import { WorkOrderStatus, WorkOrderType } from '../types';
 
 export function WorkOrders() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [selectedOrder, setSelectedOrder] = useState<WorkOrder | null>(null);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [equipos, setEquipos] = useState<any[]>([]);
+  const [ordenes, setOrdenes] = useState<any[]>([]);
+  const [isCreateOTDialogOpen, setIsCreateOTDialogOpen] = useState(false);
+  const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
+  
+  // Estados del formulario de nueva OT
+  const [newOtForm, setNewOtForm] = useState({
+    titulo: '',
+    descripcion: '',
+    tipo: 'Correctivo',
+    asignadoA: '',
+    equipoId: '',
+    prioridad: 'Media',
+    horasEstimadas: 0,
+    fechaProgramada: new Date().toISOString().split('T')[0],
+  });
 
-  const filteredOrders = mockWorkOrders.filter(order => {
+  // Cargar equipos y órdenes al montar el componente
+  useEffect(() => {
+    loadEquipos();
+    loadOrdenes();
+  }, []);
+
+  const loadEquipos = async () => {
+    try {
+      const response = await fetch('http://localhost:8080/api/equipos');
+      if (response.ok) {
+        const data = await response.json();
+        setEquipos(data);
+      }
+    } catch (err) {
+      console.error('Error cargando equipos:', err);
+    }
+  };
+
+  const loadOrdenes = async () => {
+    try {
+      const response = await fetch('http://localhost:8080/api/ordenes-trabajo');
+      if (response.ok) {
+        const data = await response.json();
+        setOrdenes(data);
+      }
+    } catch (err) {
+      console.error('Error cargando órdenes:', err);
+    }
+  };
+
+  const handleCreateOT = async () => {
+    if (!newOtForm.titulo || !newOtForm.equipoId) {
+      toast.error('El título y el equipo son requeridos');
+      return;
+    }
+
+    try {
+      const response = await fetch('http://localhost:8080/api/ordenes-trabajo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          titulo: newOtForm.titulo,
+          descripcion: newOtForm.descripcion,
+          tipo: newOtForm.tipo,
+          asignadoA: newOtForm.asignadoA,
+          equipoId: Number(newOtForm.equipoId),
+          prioridad: newOtForm.prioridad,
+          horasEstimadas: newOtForm.horasEstimadas,
+          fechaProgramada: newOtForm.fechaProgramada,
+        }),
+      });
+
+      if (response.ok) {
+        toast.success('Orden de trabajo creada exitosamente');
+        setNewOtForm({
+          titulo: '',
+          descripcion: '',
+          tipo: 'Correctivo',
+          asignadoA: '',
+          equipoId: '',
+          prioridad: 'Media',
+          horasEstimadas: 0,
+          fechaProgramada: new Date().toISOString().split('T')[0],
+        });
+        setIsCreateOTDialogOpen(false);
+        loadOrdenes(); // Recargar órdenes después de crear
+      } else {
+        toast.error(`Error al crear OT: ${await response.text()}`);
+      }
+    } catch (err) {
+      toast.error(`Error: ${err}`);
+    }
+  };
+
+  const filteredOrders = ordenes.filter(order => {
     const matchesSearch = 
-      order.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.equipmentName.toLowerCase().includes(searchTerm.toLowerCase());
+      (order.codigo || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (order.titulo || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (order.equipo?.nombre || '').toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesType = filterType === 'all' || order.type === filterType;
-    const matchesStatus = filterStatus === 'all' || order.status === filterStatus;
+    const matchesType = filterType === 'all' || order.tipo === filterType;
+    const matchesStatus = filterStatus === 'all' || order.estado?.nombre === filterStatus;
 
     return matchesSearch && matchesType && matchesStatus;
   });
@@ -72,11 +161,11 @@ export function WorkOrders() {
 
   // Estadísticas
   const stats = {
-    total: mockWorkOrders.length,
-    creadas: mockWorkOrders.filter(o => o.status === 'Creada').length,
-    planificadas: mockWorkOrders.filter(o => o.status === 'Planificada').length,
-    enEjecucion: mockWorkOrders.filter(o => o.status === 'En Ejecución').length,
-    cerradas: mockWorkOrders.filter(o => o.status === 'Cerrada').length,
+    total: ordenes.length,
+    creadas: ordenes.filter(o => o.estado?.nombre === 'Creada').length,
+    planificadas: ordenes.filter(o => o.estado?.nombre === 'Planificada').length,
+    enEjecucion: ordenes.filter(o => o.estado?.nombre === 'En Ejecución').length,
+    cerradas: ordenes.filter(o => o.estado?.nombre === 'Cerrada').length,
   };
 
   return (
@@ -86,91 +175,119 @@ export function WorkOrders() {
           <h1 className="text-3xl mb-2">Órdenes de Trabajo</h1>
           <p className="text-gray-500">Gestión completa de órdenes de mantenimiento</p>
         </div>
-        <Dialog>
+        <Dialog open={isCreateOTDialogOpen} onOpenChange={setIsCreateOTDialogOpen}>
           <DialogTrigger asChild>
             <Button>
               <Plus className="h-4 w-4 mr-2" />
               Nueva OT
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Crear Orden de Trabajo</DialogTitle>
               <DialogDescription>Complete los datos para generar una nueva OT</DialogDescription>
             </DialogHeader>
-            <div className="space-y-4 py-4">
+            <div className="space-y-4 py-4" onClick={(e) => e.stopPropagation()}>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Tipo de Trabajo</Label>
-                  <Select>
+                  <Label>Tipo</Label>
+                  <Select value={newOtForm.tipo} onValueChange={(value) => setNewOtForm({...newOtForm, tipo: value})}>
                     <SelectTrigger>
                       <SelectValue placeholder="Seleccionar tipo" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="preventivo">Preventivo</SelectItem>
-                      <SelectItem value="correctivo">Correctivo</SelectItem>
-                      <SelectItem value="predictivo">Predictivo</SelectItem>
-                      <SelectItem value="emergencia">Emergencia</SelectItem>
+                      <SelectItem value="Preventivo">Preventivo</SelectItem>
+                      <SelectItem value="Correctivo">Correctivo</SelectItem>
+                      <SelectItem value="Predictivo">Predictivo</SelectItem>
+                      <SelectItem value="Emergencia">Emergencia</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2">
                   <Label>Prioridad</Label>
-                  <Select>
+                  <Select value={newOtForm.prioridad} onValueChange={(value) => setNewOtForm({...newOtForm, prioridad: value})}>
                     <SelectTrigger>
                       <SelectValue placeholder="Seleccionar prioridad" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="alta">Alta</SelectItem>
-                      <SelectItem value="media">Media</SelectItem>
-                      <SelectItem value="baja">Baja</SelectItem>
+                      <SelectItem value="Baja">Baja</SelectItem>
+                      <SelectItem value="Media">Media</SelectItem>
+                      <SelectItem value="Alta">Alta</SelectItem>
+                      <SelectItem value="Crítica">Crítica</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
-              </div>
-              <div className="space-y-2">
-                <Label>Equipo</Label>
-                <Select>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Seleccionar equipo" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="eq1">Prensa Universal</SelectItem>
-                    <SelectItem value="eq2">Motor Principal</SelectItem>
-                    <SelectItem value="eq3">Bomba Cada B2001</SelectItem>
-                  </SelectContent>
-                </Select>
+                <div className="space-y-2">
+                  <Label>Equipo</Label>
+                  <Select value={newOtForm.equipoId} onValueChange={(value) => setNewOtForm({...newOtForm, equipoId: value})}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccionar equipo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {equipos.map(eq => (
+                        <SelectItem key={eq.id} value={String(eq.id)}>{eq.nombre}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
               <div className="space-y-2">
                 <Label>Título</Label>
-                <Input placeholder="Descripción breve del trabajo" />
+                <Input 
+                  placeholder="Descripción breve del trabajo" 
+                  value={newOtForm.titulo}
+                  onChange={(e) => setNewOtForm({...newOtForm, titulo: e.target.value})}
+                  onMouseDown={(e) => e.stopPropagation()}
+                  onTouchStart={(e) => e.stopPropagation()}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Asignado A</Label>
+                <Input 
+                  placeholder="Nombre del técnico" 
+                  value={newOtForm.asignadoA}
+                  onChange={(e) => setNewOtForm({...newOtForm, asignadoA: e.target.value})}
+                  onMouseDown={(e) => e.stopPropagation()}
+                  onTouchStart={(e) => e.stopPropagation()}
+                />
               </div>
               <div className="space-y-2">
                 <Label>Descripción Detallada</Label>
-                <Textarea placeholder="Detalles del trabajo a realizar..." rows={4} />
+                <Textarea 
+                  placeholder="Detalles del trabajo a realizar..." 
+                  rows={4}
+                  value={newOtForm.descripcion}
+                  onChange={(e) => setNewOtForm({...newOtForm, descripcion: e.target.value})}
+                  onMouseDown={(e) => e.stopPropagation()}
+                  onTouchStart={(e) => e.stopPropagation()}
+                />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Asignado a</Label>
-                  <Select>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleccionar técnico" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="tech1">Juan Pérez</SelectItem>
-                      <SelectItem value="tech2">Carlos Rodríguez</SelectItem>
-                      <SelectItem value="tech3">Ana Martínez</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Label>Horas Estimadas</Label>
+                  <Input 
+                    type="number" 
+                    placeholder="0"
+                    value={newOtForm.horasEstimadas}
+                    onChange={(e) => setNewOtForm({...newOtForm, horasEstimadas: Number(e.target.value)})}
+                    onMouseDown={(e) => e.stopPropagation()}
+                    onTouchStart={(e) => e.stopPropagation()}
+                  />
                 </div>
                 <div className="space-y-2">
-                  <Label>Horas Estimadas</Label>
-                  <Input type="number" placeholder="0" />
+                  <Label>Fecha Programada</Label>
+                  <Input 
+                    type="date"
+                    value={newOtForm.fechaProgramada}
+                    onChange={(e) => setNewOtForm({...newOtForm, fechaProgramada: e.target.value})}
+                    onMouseDown={(e) => e.stopPropagation()}
+                    onTouchStart={(e) => e.stopPropagation()}
+                  />
                 </div>
               </div>
               <div className="flex justify-end space-x-2 pt-4">
-                <Button variant="outline">Cancelar</Button>
-                <Button>Crear OT</Button>
+                <Button variant="outline" onClick={() => setIsCreateOTDialogOpen(false)}>Cancelar</Button>
+                <Button onClick={handleCreateOT}>Crear OT</Button>
               </div>
             </div>
           </DialogContent>
@@ -279,35 +396,35 @@ export function WorkOrders() {
             <TableBody>
               {filteredOrders.map((order) => (
                 <TableRow key={order.id}>
-                  <TableCell className="font-medium">{order.code}</TableCell>
+                  <TableCell className="font-medium">{order.codigo}</TableCell>
                   <TableCell>
-                    <Badge className={getTypeColor(order.type)}>{order.type}</Badge>
+                    <Badge className={getTypeColor(order.tipo)}>{order.tipo}</Badge>
                   </TableCell>
-                  <TableCell>{order.equipmentName}</TableCell>
-                  <TableCell className="max-w-[200px] truncate">{order.title}</TableCell>
+                  <TableCell>{order.equipo?.nombre || '-'}</TableCell>
+                  <TableCell className="max-w-[200px] truncate">{order.titulo}</TableCell>
                   <TableCell>
                     <div className="flex items-center">
-                      <AlertCircle className={`h-4 w-4 mr-1 ${getPriorityColor(order.priority)}`} />
-                      <span className="text-sm">{order.priority}</span>
+                      <AlertCircle className={`h-4 w-4 mr-1 ${getPriorityColor(order.prioridad?.nivel || 'Media')}`} />
+                      <span className="text-sm">{order.prioridad?.nivel || '-'}</span>
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge className={getStatusColor(order.status)}>
+                    <Badge className={getStatusColor(order.estado?.nombre || 'Creada')}>
                       <span className="flex items-center gap-1">
-                        {getStatusIcon(order.status)}
-                        {order.status}
+                        {getStatusIcon(order.estado?.nombre || 'Creada')}
+                        {order.estado?.nombre || 'Creada'}
                       </span>
                     </Badge>
                   </TableCell>
-                  <TableCell>{order.assignedTo || '-'}</TableCell>
-                  <TableCell>{new Date(order.createdDate).toLocaleDateString('es-ES')}</TableCell>
+                  <TableCell>{order.asignadoA || '-'}</TableCell>
+                  <TableCell>{order.fechaCreacion ? new Date(order.fechaCreacion).toLocaleDateString('es-ES') : '-'}</TableCell>
                   <TableCell>
                     <Button 
                       variant="ghost" 
                       size="sm"
                       onClick={() => {
                         setSelectedOrder(order);
-                        setIsDialogOpen(true);
+                        setIsDetailsDialogOpen(true);
                       }}
                     >
                       Ver
@@ -321,7 +438,7 @@ export function WorkOrders() {
       </Card>
 
       {/* Dialog para ver detalles de OT */}
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+      <Dialog open={isDetailsDialogOpen} onOpenChange={setIsDetailsDialogOpen}>
         <DialogContent className="max-w-3xl">
           <DialogHeader>
             <DialogTitle>Detalles de Orden de Trabajo</DialogTitle>
@@ -331,12 +448,12 @@ export function WorkOrders() {
             <div className="space-y-4 py-4">
               <div className="flex items-center justify-between pb-4 border-b">
                 <div className="space-y-1">
-                  <h3 className="text-lg font-semibold">{selectedOrder.title}</h3>
-                  <p className="text-sm text-gray-500">{selectedOrder.equipmentName}</p>
+                  <h3 className="text-lg font-semibold">{selectedOrder.titulo}</h3>
+                  <p className="text-sm text-gray-500">{selectedOrder.equipo?.nombre || '-'}</p>
                 </div>
                 <div className="flex gap-2">
-                  <Badge className={getTypeColor(selectedOrder.type)}>{selectedOrder.type}</Badge>
-                  <Badge className={getStatusColor(selectedOrder.status)}>{selectedOrder.status}</Badge>
+                  <Badge className={getTypeColor(selectedOrder.tipo)}>{selectedOrder.tipo}</Badge>
+                  <Badge className={getStatusColor(selectedOrder.estado?.nombre || 'Creada')}>{selectedOrder.estado?.nombre || 'Creada'}</Badge>
                 </div>
               </div>
 
@@ -346,37 +463,33 @@ export function WorkOrders() {
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
                       <span className="text-gray-500">Prioridad:</span>
-                      <span className={getPriorityColor(selectedOrder.priority)}>{selectedOrder.priority}</span>
+                      <span className={getPriorityColor(selectedOrder.prioridad?.nivel || 'Media')}>{selectedOrder.prioridad?.nivel || '-'}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-500">Asignado a:</span>
-                      <span>{selectedOrder.assignedTo || '-'}</span>
+                      <span>{selectedOrder.asignadoA || '-'}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-500">Fecha creación:</span>
-                      <span>{new Date(selectedOrder.createdDate).toLocaleDateString('es-ES')}</span>
+                      <span>{selectedOrder.fechaCreacion ? new Date(selectedOrder.fechaCreacion).toLocaleDateString('es-ES') : '-'}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-500">Fecha planificada:</span>
-                      <span>{selectedOrder.plannedDate ? new Date(selectedOrder.plannedDate).toLocaleDateString('es-ES') : '-'}</span>
+                      <span>{selectedOrder.fechaProgramada ? new Date(selectedOrder.fechaProgramada).toLocaleDateString('es-ES') : '-'}</span>
                     </div>
                   </div>
                 </div>
 
                 <div>
-                  <h4 className="text-sm font-semibold mb-3">Tiempos y Costos</h4>
+                  <h4 className="text-sm font-semibold mb-3">Tiempos</h4>
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
                       <span className="text-gray-500">Horas estimadas:</span>
-                      <span>{selectedOrder.estimatedHours || '-'} hrs</span>
+                      <span>{selectedOrder.horasEstimadas || '-'} hrs</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-500">Horas reales:</span>
-                      <span>{selectedOrder.actualHours || '-'} hrs</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-500">Costo total:</span>
-                      <span className="font-medium">${selectedOrder.cost?.toLocaleString() || '-'}</span>
+                      <span className="text-gray-500">Código:</span>
+                      <span>{selectedOrder.codigo || '-'}</span>
                     </div>
                   </div>
                 </div>
@@ -388,10 +501,10 @@ export function WorkOrders() {
               </div>
 
               <div className="flex justify-end space-x-2 pt-4 border-t">
-                <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Cerrar</Button>
+                <Button variant="outline" onClick={() => setIsDetailsDialogOpen(false)}>Cerrar</Button>
                 <Button variant="outline">Editar</Button>
-                {selectedOrder.status === 'Planificada' && <Button>Iniciar Trabajo</Button>}
-                {selectedOrder.status === 'En Ejecución' && <Button>Cerrar OT</Button>}
+                {selectedOrder.estado?.nombre === 'Planificada' && <Button>Iniciar Trabajo</Button>}
+                {selectedOrder.estado?.nombre === 'En Ejecución' && <Button>Cerrar OT</Button>}
               </div>
             </div>
           )}

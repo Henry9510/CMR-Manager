@@ -97,7 +97,6 @@ public class ComponenteService {
     private void mapearDtoAComponente(ComponenteDTO dto, Componente componente) {
         componente.setNombre(dto.nombre);
         componente.setNumeroParte(dto.numeroParte);
-        componente.setDescripcion(dto.descripcion);
 
         if (dto.estadoComponenteId != null) {
             componente.setEstado(estadoComponenteRepository.findById(dto.estadoComponenteId).orElse(null));

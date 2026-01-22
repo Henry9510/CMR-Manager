@@ -25,7 +25,6 @@ public class Componente {
 
     private String nombre; // Nombre del componente
     private String numeroParte; // Número de parte del componente
-    private String descripcion; // Descripción opcional
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "equipo_id")
@@ -36,6 +35,7 @@ public class Componente {
     @JoinColumn(name = "estado_componente_id")
     @JsonManagedReference
     private EstadoComponente estado;
+
 
     private Float horasTrabajo = 0f; // Horas de trabajo acumuladas del componente
     private Float horasMantenimiento = 300f; // Horas para hacer mantenimiento del componente
