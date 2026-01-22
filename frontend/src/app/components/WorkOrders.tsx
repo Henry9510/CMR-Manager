@@ -16,7 +16,7 @@ export function WorkOrders() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
-  const [selectedOrder, setSelectedOrder] = useState<WorkOrder | null>(null);
+  const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
   const [equipos, setEquipos] = useState<any[]>([]);
   const [ordenes, setOrdenes] = useState<any[]>([]);
   const [isCreateOTDialogOpen, setIsCreateOTDialogOpen] = useState(false);
